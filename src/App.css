@@ -451,3 +451,308 @@ tbody .col-name {
 .btn-save:hover {
   background: #234f7a;
 }
+
+/* Upload button in filters */
+.btn-upload {
+  padding: 7px 14px;
+  border: 1px solid #1a3c5e;
+  border-radius: 6px;
+  background: #fff;
+  color: #1a3c5e;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.btn-upload:hover {
+  background: #1a3c5e;
+  color: white;
+}
+
+/* Fill schedule button inside name cell */
+.emp-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.emp-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.btn-fill-schedule {
+  flex-shrink: 0;
+  padding: 3px 7px;
+  border: 1px solid #1a3c5e55;
+  border-radius: 4px;
+  background: #eef2f8;
+  color: #1a3c5e;
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  line-height: 1.4;
+}
+
+.btn-fill-schedule:hover {
+  background: #1a3c5e;
+  color: white;
+  border-color: #1a3c5e;
+}
+
+/* ScheduleFiller modal */
+.modal-filler {
+  width: 520px;
+}
+
+.filler-section-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.pattern-btns {
+  display: flex;
+  gap: 8px;
+}
+
+.pattern-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 10px 8px;
+  border: 2px solid #dde2e8;
+  border-radius: 8px;
+  background: #f7f9fb;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.pattern-btn:hover {
+  border-color: #1a3c5e;
+}
+
+.pattern-btn.active {
+  border-color: #1a3c5e;
+  background: #eef2f8;
+  box-shadow: 0 0 0 2px #1a3c5e22;
+}
+
+.pattern-label {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #1a3c5e;
+}
+
+.pattern-desc {
+  font-size: 0.7rem;
+  color: #666;
+  text-align: center;
+  line-height: 1.3;
+}
+
+.filler-start-row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.filler-date-input {
+  padding: 7px 12px;
+  border: 1px solid #c8d0da;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  outline: none;
+  width: fit-content;
+}
+
+.filler-date-input:focus {
+  border-color: #1a3c5e;
+}
+
+/* Preview strip */
+.filler-preview {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+
+.preview-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 30px;
+}
+
+.preview-dow {
+  font-size: 0.62rem;
+  color: #888;
+  font-weight: 600;
+}
+
+.preview-day {
+  font-size: 0.7rem;
+  color: #444;
+  font-weight: 700;
+}
+
+.preview-val {
+  width: 28px;
+  height: 22px;
+  border-radius: 4px;
+  border: 1px solid #dde2e8;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #333;
+}
+
+.preview-weekend .preview-dow,
+.preview-weekend .preview-day {
+  color: #c0392b;
+}
+
+/* EmployeeUpload modal */
+.modal-upload {
+  width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.upload-format-hint {
+  font-size: 0.82rem;
+  color: #555;
+  line-height: 1.5;
+}
+
+.upload-example {
+  margin-top: 6px;
+  background: #f4f6f8;
+  border: 1px solid #dde2e8;
+  border-radius: 5px;
+  padding: 8px 10px;
+  font-size: 0.78rem;
+  color: #333;
+  font-family: monospace;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.upload-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-file-upload {
+  padding: 7px 14px;
+  border: 1px solid #c8d0da;
+  border-radius: 6px;
+  background: #f7f9fb;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.btn-file-upload:hover {
+  background: #eef2f8;
+  border-color: #1a3c5e;
+}
+
+.upload-or {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.upload-textarea {
+  min-height: 100px;
+  font-family: monospace;
+  font-size: 0.82rem;
+}
+
+.btn-parse {
+  padding: 7px 16px;
+  border: none;
+  border-radius: 6px;
+  background: #1a3c5e;
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  align-self: flex-start;
+}
+
+.btn-parse:hover { background: #234f7a; }
+.btn-parse:disabled { background: #aaa; cursor: default; }
+
+.upload-errors {
+  background: #fff5f5;
+  border: 1px solid #f8d7da;
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+
+.upload-error-line {
+  font-size: 0.8rem;
+  color: #c0392b;
+  padding: 2px 0;
+}
+
+.upload-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.upload-preview-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #1a3c5e;
+}
+
+.upload-preview-table-wrap {
+  overflow-x: auto;
+  border-radius: 6px;
+  border: 1px solid #dde2e8;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.upload-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.upload-preview-table th {
+  background: #1a3c5e;
+  color: white;
+  padding: 6px 10px;
+  text-align: left;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+}
+
+.upload-preview-table td {
+  padding: 5px 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.upload-preview-table tr:last-child td {
+  border-bottom: none;
+}

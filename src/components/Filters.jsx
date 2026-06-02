@@ -1,15 +1,15 @@
-import { workshops, positions } from '../mockData';
+import { departments, positions } from '../mockData';
 
-export default function Filters({ filters, onChange }) {
-  const { workshop, position, shift, dateFrom, dateTo } = filters;
+export default function Filters({ filters, onChange, onUploadClick }) {
+  const { department, position, shift, dateFrom, dateTo } = filters;
 
   return (
     <div className="filters">
       <div className="filter-group">
-        <label>Производство</label>
-        <select value={workshop} onChange={e => onChange({ workshop: e.target.value })}>
-          {workshops.map(w => (
-            <option key={w} value={w}>{w}</option>
+        <label>Отдел</label>
+        <select value={department} onChange={e => onChange({ department: e.target.value })}>
+          {departments.map(d => (
+            <option key={d} value={d}>{d}</option>
           ))}
         </select>
       </div>
@@ -35,20 +35,19 @@ export default function Filters({ filters, onChange }) {
 
       <div className="filter-group">
         <label>С</label>
-        <input
-          type="date"
-          value={dateFrom}
-          onChange={e => onChange({ dateFrom: e.target.value })}
-        />
+        <input type="date" value={dateFrom} onChange={e => onChange({ dateFrom: e.target.value })} />
       </div>
 
       <div className="filter-group">
         <label>По</label>
-        <input
-          type="date"
-          value={dateTo}
-          onChange={e => onChange({ dateTo: e.target.value })}
-        />
+        <input type="date" value={dateTo} onChange={e => onChange({ dateTo: e.target.value })} />
+      </div>
+
+      <div className="filter-group" style={{ justifyContent: 'flex-end' }}>
+        <label style={{ visibility: 'hidden' }}>_</label>
+        <button className="btn-upload" onClick={onUploadClick}>
+          Загрузить сотрудников
+        </button>
       </div>
     </div>
   );

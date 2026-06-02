@@ -2,7 +2,9 @@ import { useState, useMemo, useEffect } from 'react';
 import Filters from './components/Filters';
 import ScheduleTable from './components/ScheduleTable';
 import CellEditor from './components/CellEditor';
-import { employees, generateSchedule } from './mockData';
+import ScheduleFiller from './components/ScheduleFiller';
+import EmployeeUpload from './components/EmployeeUpload';
+import { defaultEmployees, generateSchedule } from './mockData';
 import './App.css';
 
 function getDefaultDates() {
@@ -20,28 +22,30 @@ export default function App() {
   const { dateFrom: defaultFrom, dateTo: defaultTo } = getDefaultDates();
 
   const [filters, setFilters] = useState({
-    workshop: 'Цех №1',
-    position: 'all',
-    shift:    'all',
-    dateFrom: defaultFrom,
-    dateTo:   defaultTo,
+    department: 'Цех №1',
+    position:   'all',
+    shift:      'all',
+    dateFrom:   defaultFrom,
+    dateTo:     defaultTo,
   });
 
-  const [scheduleMap, setScheduleMap] = useState({});
-  const [editingCell, setEditingCell] = useState(null);
+  const [employeesMap, setEmployeesMap] = useState(defaultEmployees);
+  const [scheduleMap, setScheduleMap]   = useState({});
+  const [editingCell, setEditingCell]   = useState(null);
+  const [fillingEmp, setFillingEmp]     = useState(null);
+  const [showUpload, setShowUpload]     = useState(false);
 
   const { year, month } = useMemo(() => {
     const d = new Date(filters.dateFrom);
     return { year: d.getFullYear(), month: d.getMonth() + 1 };
   }, [filters.dateFrom]);
 
-  const allEmployees = employees[filters.workshop] || [];
+  const allEmployees = employeesMap[filters.department] || [];
 
-  // Reset schedule when workshop/month changes
   useEffect(() => {
     setScheduleMap(generateSchedule(allEmployees, year, month));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.workshop, year, month]);
+  }, [filters.department, year, month]);
 
   const visibleEmployees = useMemo(() => {
     if (filters.position === 'all') return allEmployees;
@@ -54,10 +58,7 @@ export default function App() {
       empId:       emp.id,
       empName:     emp.name,
       empPosition: emp.position,
-      day,
-      shiftType,
-      year,
-      month,
+      day, shiftType, year, month,
       value:   shiftType === 'day' ? (cell.day ?? '') : (cell.nightShift ?? ''),
       comment: shiftType === 'day' ? (cell.dayComment ?? '') : (cell.nightComment ?? ''),
     });
@@ -77,13 +78,37 @@ export default function App() {
     });
   }
 
+  function handleFillApply(empId, updates) {
+    setScheduleMap(prev => {
+      const empSched = { ...(prev[empId] ?? {}) };
+      for (const [d, val] of Object.entries(updates)) {
+        empSched[d] = { ...(empSched[d] ?? {}), day: val };
+      }
+      return { ...prev, [empId]: empSched };
+    });
+  }
+
+  function handleUpload(grouped) {
+    setEmployeesMap(prev => {
+      const next = { ...prev };
+      for (const [dept, emps] of Object.entries(grouped)) {
+        next[dept] = emps;
+      }
+      return next;
+    });
+  }
+
   return (
     <div className="app">
       <header className="app-header">
         <h1>График работы сотрудников</h1>
       </header>
 
-      <Filters filters={filters} onChange={patch => setFilters(prev => ({ ...prev, ...patch }))} />
+      <Filters
+        filters={filters}
+        onChange={patch => setFilters(prev => ({ ...prev, ...patch }))}
+        onUploadClick={() => setShowUpload(true)}
+      />
 
       <div className="table-container">
         <ScheduleTable
@@ -93,6 +118,7 @@ export default function App() {
           month={month}
           shiftFilter={filters.shift}
           onCellClick={handleCellClick}
+          onFillClick={setFillingEmp}
         />
       </div>
 
@@ -114,12 +140,16 @@ export default function App() {
           Б — Больничный
         </div>
         <div className="legend-item">
-          <div className="legend-dot" style={{ background: '#e9ecef', border: '1px solid #c8d0da' }} />
-          Ночная смена
+          <div className="legend-dot" style={{ background: '#ebebeb', border: '1px solid #c8d0da' }} />
+          День (пусто)
+        </div>
+        <div className="legend-item">
+          <div className="legend-dot" style={{ background: '#c8c8c8', border: '1px solid #aaa' }} />
+          Ночь (пусто)
         </div>
         <div className="legend-item">
           <span className="comment-dot-demo" />
-          Есть комментарий
+          Комментарий
         </div>
       </div>
 
@@ -128,6 +158,23 @@ export default function App() {
           cell={editingCell}
           onSave={handleCellSave}
           onClose={() => setEditingCell(null)}
+        />
+      )}
+
+      {fillingEmp && (
+        <ScheduleFiller
+          employee={fillingEmp}
+          year={year}
+          month={month}
+          onApply={handleFillApply}
+          onClose={() => setFillingEmp(null)}
+        />
+      )}
+
+      {showUpload && (
+        <EmployeeUpload
+          onUpload={handleUpload}
+          onClose={() => setShowUpload(false)}
         />
       )}
     </div>

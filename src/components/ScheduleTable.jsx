@@ -1,4 +1,4 @@
-import { SHIFT_COLORS } from '../mockData';
+import { getCellColor } from '../mockData';
 
 const DAY_NAMES = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
 
@@ -11,7 +11,9 @@ function isWeekend(year, month, day) {
   return dow === 0 || dow === 6;
 }
 
-export default function ScheduleTable({ employees, schedule, year, month, shiftFilter, onCellClick }) {
+export default function ScheduleTable({
+  employees, schedule, year, month, shiftFilter, onCellClick, onFillClick,
+}) {
   const daysInMonth = new Date(year, month, 0).getDate();
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
@@ -46,8 +48,19 @@ export default function ScheduleTable({ employees, schedule, year, month, shiftF
           {employees.map((emp, idx) => (
             <tr key={emp.id} className={idx % 2 === 0 ? 'row-even' : 'row-odd'}>
               <td className="col-name">
-                <span className="emp-name">{emp.name}</span>
-                <span className="emp-position">({emp.position})</span>
+                <div className="emp-info">
+                  <div className="emp-left">
+                    <span className="emp-name">{emp.name}</span>
+                    <span className="emp-position">({emp.position})</span>
+                  </div>
+                  <button
+                    className="btn-fill-schedule"
+                    title="Внести график"
+                    onClick={() => onFillClick(emp)}
+                  >
+                    Граф.
+                  </button>
+                </div>
               </td>
               {days.map(d => {
                 const cell = schedule[emp.id]?.[d] ?? {};
@@ -88,8 +101,8 @@ function DayCells({ dayVal, nightVal, dayComment, nightComment, showDay, showNig
     <>
       {showDay && (
         <td
-          className={`cell cell-day ${isWeekend ? 'cell-weekend' : ''} ${dayComment ? 'has-comment' : ''}`}
-          style={{ backgroundColor: SHIFT_COLORS[dayVal] ?? '#fff' }}
+          className={`cell cell-day ${isWeekend ? 'cell-weekend' : ''}`}
+          style={{ backgroundColor: getCellColor(dayVal, false) }}
           onClick={onDayClick}
           title={dayComment || undefined}
         >
@@ -99,8 +112,8 @@ function DayCells({ dayVal, nightVal, dayComment, nightComment, showDay, showNig
       )}
       {showNight && (
         <td
-          className={`cell cell-night ${nightComment ? 'has-comment' : ''}`}
-          style={{ backgroundColor: nightVal ? SHIFT_COLORS[nightVal] : '#e9ecef' }}
+          className="cell cell-night"
+          style={{ backgroundColor: getCellColor(nightVal, true) }}
           onClick={onNightClick}
           title={nightComment || undefined}
         >
