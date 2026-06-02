@@ -1,52 +1,46 @@
 export const departments = ['Цех №1', 'Цех №2', 'Цех №3', 'Склад', 'ПроИнокс'];
 
 export const positions = [
-  'Оператор',
-  'Технолог',
-  'Механик',
-  'Мастер смены',
-  'Слесарь',
-  'Кладовщик',
-  'Менеджер',
+  'Оператор', 'Технолог', 'Механик', 'Мастер смены', 'Слесарь', 'Кладовщик', 'Менеджер',
 ];
 
 export const defaultEmployees = {
   'Цех №1': [
-    { id: 1,  code: '001', name: 'Иванов Иван Иванович',          position: 'Мастер смены' },
-    { id: 2,  code: '002', name: 'Петров Пётр Петрович',           position: 'Оператор' },
-    { id: 3,  code: '003', name: 'Сидорова Анна Михайловна',       position: 'Технолог' },
-    { id: 4,  code: '004', name: 'Козлов Дмитрий Сергеевич',      position: 'Слесарь' },
-    { id: 5,  code: '005', name: 'Новикова Елена Владимировна',    position: 'Оператор' },
+    { id: 1,  code: '001', name: 'Иванов Иван Иванович',         position: 'Мастер смены' },
+    { id: 2,  code: '002', name: 'Петров Пётр Петрович',          position: 'Оператор' },
+    { id: 3,  code: '003', name: 'Сидорова Анна Михайловна',      position: 'Технолог' },
+    { id: 4,  code: '004', name: 'Козлов Дмитрий Сергеевич',     position: 'Слесарь' },
+    { id: 5,  code: '005', name: 'Новикова Елена Владимировна',   position: 'Оператор' },
   ],
   'Цех №2': [
-    { id: 6,  code: '006', name: 'Морозов Алексей Павлович',      position: 'Механик' },
-    { id: 7,  code: '007', name: 'Волкова Мария Ивановна',         position: 'Технолог' },
-    { id: 8,  code: '008', name: 'Зайцев Николай Андреевич',       position: 'Оператор' },
-    { id: 9,  code: '009', name: 'Соколова Ольга Дмитриевна',     position: 'Мастер смены' },
+    { id: 6,  code: '006', name: 'Морозов Алексей Павлович',     position: 'Механик' },
+    { id: 7,  code: '007', name: 'Волкова Мария Ивановна',        position: 'Технолог' },
+    { id: 8,  code: '008', name: 'Зайцев Николай Андреевич',      position: 'Оператор' },
+    { id: 9,  code: '009', name: 'Соколова Ольга Дмитриевна',    position: 'Мастер смены' },
   ],
   'Цех №3': [
-    { id: 10, code: '010', name: 'Лебедев Виктор Александрович',   position: 'Слесарь' },
-    { id: 11, code: '011', name: 'Орлова Татьяна Николаевна',      position: 'Оператор' },
-    { id: 12, code: '012', name: 'Смирнов Андрей Юрьевич',         position: 'Механик' },
+    { id: 10, code: '010', name: 'Лебедев Виктор Александрович',  position: 'Слесарь' },
+    { id: 11, code: '011', name: 'Орлова Татьяна Николаевна',     position: 'Оператор' },
+    { id: 12, code: '012', name: 'Смирнов Андрей Юрьевич',        position: 'Механик' },
   ],
   'Склад': [
-    { id: 13, code: '013', name: 'Фёдоров Сергей Иванович',        position: 'Кладовщик' },
-    { id: 14, code: '014', name: 'Громова Наталья Петровна',        position: 'Кладовщик' },
+    { id: 13, code: '013', name: 'Фёдоров Сергей Иванович',       position: 'Кладовщик' },
+    { id: 14, code: '014', name: 'Громова Наталья Петровна',       position: 'Кладовщик' },
   ],
   'ПроИнокс': [
-    { id: 15, code: '015', name: 'Белов Артём Викторович',          position: 'Менеджер' },
-    { id: 16, code: '016', name: 'Крылова Юлия Андреевна',          position: 'Технолог' },
+    { id: 15, code: '015', name: 'Белов Артём Викторович',         position: 'Менеджер' },
+    { id: 16, code: '016', name: 'Крылова Юлия Андреевна',         position: 'Технолог' },
   ],
 };
 
 export const SHIFT_COLORS = {
-  'Р': '#d4edda',
-  'В': '#fff3cd',
-  'О': '#cce5ff',
-  'Б': '#f8d7da',
+  'Р': '#d4edda',  // зелёный — работает
+  'В': '#fff3cd',  // жёлтый — выходной
+  'О': '#cce5ff',  // синий — отпуск
+  'Б': '#f8d7da',  // красный — больничный
+  'С': '#e8d5f5',  // фиолетовый — отсыпной
 };
 
-// Base empty-cell colors
 export const DAY_EMPTY_COLOR   = '#ebebeb';
 export const NIGHT_EMPTY_COLOR = '#c8c8c8';
 
@@ -67,34 +61,52 @@ export function generateSchedule(employeeList, year, month) {
   return schedule;
 }
 
-// Fill schedule for one employee according to a pattern
-// Returns partial schedule updates { [day]: { day, nightShift } }
+/**
+ * Returns per-day update objects { day?, nightShift? }.
+ * Only the keys present in each object will be overwritten in the schedule.
+ *
+ * options.shift: 'day' | 'night'  — which column to fill (ignored for ДНОВ)
+ * options.startDate: Date          — cycle start date (for 2x2 and ДНОВ)
+ */
 export function applyPattern(pattern, year, month, options = {}) {
   const daysInMonth = new Date(year, month, 0).getDate();
+  const shift = options.shift || 'day';
+  const startDate = options.startDate instanceof Date
+    ? options.startDate
+    : new Date(year, month - 1, 1);
   const result = {};
 
   for (let d = 1; d <= daysInMonth; d++) {
     const date = new Date(year, month - 1, d);
-    const dow = date.getDay(); // 0=Sun, 1=Mon … 6=Sat
-    let val = '';
+    const dow = date.getDay(); // 0=Sun … 6=Sat
+    const diffDays = Math.floor((date - startDate) / 86400000);
 
-    if (pattern === '5-0') {
-      val = (dow >= 1 && dow <= 5) ? 'Р' : 'В';
-    } else if (pattern === '6-1') {
-      val = (dow >= 1 && dow <= 6) ? 'Р' : 'В';
-    } else if (pattern === '2x2') {
-      const startDate = options.startDate || new Date(year, month - 1, 1);
-      const diffMs = date - startDate;
-      const diffDays = Math.floor(diffMs / 86400000);
+    if (pattern === 'ДНОВ') {
       if (diffDays < 0) {
-        val = '';
+        result[d] = {};
       } else {
         const phase = diffDays % 4;
-        val = phase < 2 ? 'Р' : 'В';
+        // Д=0: рабочий день, Н=1: рабочая ночь, О=2: отсыпной, В=3: выходной
+        switch (phase) {
+          case 0: result[d] = { day: 'Р', nightShift: '' };  break;
+          case 1: result[d] = { day: '',  nightShift: 'Р' }; break;
+          case 2: result[d] = { day: 'С', nightShift: '' };  break;
+          case 3: result[d] = { day: 'В', nightShift: '' };  break;
+          default: result[d] = {};
+        }
       }
+    } else {
+      let val = '';
+      if (pattern === '5-0') {
+        val = (dow >= 1 && dow <= 5) ? 'Р' : 'В';
+      } else if (pattern === '6-1') {
+        val = (dow >= 1 && dow <= 6) ? 'Р' : 'В';
+      } else if (pattern === '2x2') {
+        if (diffDays < 0) { val = ''; }
+        else { val = (diffDays % 4) < 2 ? 'Р' : 'В'; }
+      }
+      result[d] = shift === 'day' ? { day: val } : { nightShift: val };
     }
-
-    result[d] = val;
   }
   return result;
 }

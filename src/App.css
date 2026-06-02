@@ -23,10 +23,88 @@ body {
   box-shadow: 0 2px 6px rgba(0,0,0,0.2);
 }
 
+.header-main {
+  display: flex;
+  align-items: baseline;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
 .app-header h1 {
   font-size: 1.4rem;
   font-weight: 600;
   letter-spacing: 0.3px;
+}
+
+.header-period {
+  font-size: 0.9rem;
+  opacity: 0.75;
+  font-weight: 400;
+}
+
+.header-period strong {
+  opacity: 1;
+  font-weight: 700;
+}
+
+/* Period navigator */
+.period-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.period-arrow {
+  width: 30px;
+  height: 34px;
+  border: 1px solid #c8d0da;
+  border-radius: 6px;
+  background: #fafbfc;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  color: #1a3c5e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+  padding: 0;
+}
+
+.period-arrow:hover {
+  background: #eef2f8;
+  border-color: #1a3c5e;
+}
+
+.period-selects {
+  display: flex;
+  gap: 4px;
+}
+
+.period-select {
+  padding: 7px 10px;
+  border: 1px solid #c8d0da;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: #fafbfc;
+  color: #1a3c5e;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.period-select:focus {
+  border-color: #1a3c5e;
+  background: #fff;
+}
+
+.filters-divider {
+  width: 1px;
+  height: 34px;
+  background: #dde2e8;
+  margin: 0 4px;
+  flex-shrink: 0;
 }
 
 /* Filters */
@@ -504,6 +582,32 @@ tbody .col-name {
   border-color: #1a3c5e;
 }
 
+/* Shift toggle (день/ночь) */
+.shift-toggle {
+  display: flex;
+  gap: 8px;
+}
+
+.shift-toggle-btn {
+  flex: 1;
+  padding: 8px 10px;
+  border: 2px solid #dde2e8;
+  border-radius: 6px;
+  background: #f7f9fb;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.shift-toggle-btn:hover { border-color: #1a3c5e; }
+
+.shift-toggle-btn.active {
+  border-color: #1a3c5e;
+  background: #eef2f8;
+  box-shadow: 0 0 0 2px #1a3c5e22;
+}
+
 /* ScheduleFiller modal */
 .modal-filler {
   width: 520px;
@@ -608,10 +712,10 @@ tbody .col-name {
 
 .preview-val {
   width: 28px;
-  height: 22px;
-  border-radius: 4px;
+  height: 20px;
+  border-radius: 3px;
   border: 1px solid #dde2e8;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -619,9 +723,24 @@ tbody .col-name {
   color: #333;
 }
 
+.preview-val-night {
+  margin-top: 2px;
+  opacity: 0.85;
+}
+
 .preview-weekend .preview-dow,
 .preview-weekend .preview-day {
   color: #c0392b;
+}
+
+.filler-legend-hint {
+  font-size: 0.75rem;
+  color: #666;
+  background: #f7f9fb;
+  border: 1px solid #dde2e8;
+  border-radius: 5px;
+  padding: 7px 10px;
+  line-height: 1.5;
 }
 
 /* EmployeeUpload modal */

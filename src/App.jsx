@@ -7,26 +7,23 @@ import EmployeeUpload from './components/EmployeeUpload';
 import { defaultEmployees, generateSchedule } from './mockData';
 import './App.css';
 
-function getDefaultDates() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const lastDay = new Date(year, now.getMonth() + 1, 0).getDate();
-  return {
-    dateFrom: `${year}-${month}-01`,
-    dateTo:   `${year}-${month}-${lastDay}`,
-  };
-}
+const MONTH_NAMES_RU = [
+  'Январь','Февраль','Март','Апрель','Май','Июнь',
+  'Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь',
+];
 
 export default function App() {
-  const { dateFrom: defaultFrom, dateTo: defaultTo } = getDefaultDates();
+  const now = new Date();
+
+  const [period, setPeriod] = useState({
+    year:  now.getFullYear(),
+    month: now.getMonth() + 1,
+  });
 
   const [filters, setFilters] = useState({
     department: 'Цех №1',
     position:   'all',
     shift:      'all',
-    dateFrom:   defaultFrom,
-    dateTo:     defaultTo,
   });
 
   const [employeesMap, setEmployeesMap] = useState(defaultEmployees);
@@ -35,11 +32,7 @@ export default function App() {
   const [fillingEmp, setFillingEmp]     = useState(null);
   const [showUpload, setShowUpload]     = useState(false);
 
-  const { year, month } = useMemo(() => {
-    const d = new Date(filters.dateFrom);
-    return { year: d.getFullYear(), month: d.getMonth() + 1 };
-  }, [filters.dateFrom]);
-
+  const { year, month } = period;
   const allEmployees = employeesMap[filters.department] || [];
 
   useEffect(() => {
@@ -78,35 +71,37 @@ export default function App() {
     });
   }
 
+  // Merge per-day update objects { day?, nightShift? } into schedule
   function handleFillApply(empId, updates) {
     setScheduleMap(prev => {
       const empSched = { ...(prev[empId] ?? {}) };
-      for (const [d, val] of Object.entries(updates)) {
-        empSched[d] = { ...(empSched[d] ?? {}), day: val };
+      for (const [d, update] of Object.entries(updates)) {
+        empSched[d] = { ...(empSched[d] ?? {}), ...update };
       }
       return { ...prev, [empId]: empSched };
     });
   }
 
   function handleUpload(grouped) {
-    setEmployeesMap(prev => {
-      const next = { ...prev };
-      for (const [dept, emps] of Object.entries(grouped)) {
-        next[dept] = emps;
-      }
-      return next;
-    });
+    setEmployeesMap(prev => ({ ...prev, ...grouped }));
   }
+
+  const periodLabel = `${MONTH_NAMES_RU[month - 1]} ${year}`;
 
   return (
     <div className="app">
       <header className="app-header">
-        <h1>График работы сотрудников</h1>
+        <div className="header-main">
+          <h1>График работы сотрудников</h1>
+          <div className="header-period">График работы на период: <strong>{periodLabel}</strong></div>
+        </div>
       </header>
 
       <Filters
         filters={filters}
-        onChange={patch => setFilters(prev => ({ ...prev, ...patch }))}
+        period={period}
+        onFilterChange={patch => setFilters(prev => ({ ...prev, ...patch }))}
+        onPeriodChange={setPeriod}
         onUploadClick={() => setShowUpload(true)}
       />
 
@@ -123,59 +118,27 @@ export default function App() {
       </div>
 
       <div className="legend">
-        <div className="legend-item">
-          <div className="legend-dot" style={{ background: '#d4edda' }} />
-          Р — Работает
-        </div>
-        <div className="legend-item">
-          <div className="legend-dot" style={{ background: '#fff3cd' }} />
-          В — Выходной
-        </div>
-        <div className="legend-item">
-          <div className="legend-dot" style={{ background: '#cce5ff' }} />
-          О — Отпуск
-        </div>
-        <div className="legend-item">
-          <div className="legend-dot" style={{ background: '#f8d7da' }} />
-          Б — Больничный
-        </div>
-        <div className="legend-item">
-          <div className="legend-dot" style={{ background: '#ebebeb', border: '1px solid #c8d0da' }} />
-          День (пусто)
-        </div>
-        <div className="legend-item">
-          <div className="legend-dot" style={{ background: '#c8c8c8', border: '1px solid #aaa' }} />
-          Ночь (пусто)
-        </div>
-        <div className="legend-item">
-          <span className="comment-dot-demo" />
-          Комментарий
-        </div>
+        <div className="legend-item"><div className="legend-dot" style={{ background: '#d4edda' }} />Р — Работает</div>
+        <div className="legend-item"><div className="legend-dot" style={{ background: '#fff3cd' }} />В — Выходной</div>
+        <div className="legend-item"><div className="legend-dot" style={{ background: '#cce5ff' }} />О — Отпуск</div>
+        <div className="legend-item"><div className="legend-dot" style={{ background: '#f8d7da' }} />Б — Больничный</div>
+        <div className="legend-item"><div className="legend-dot" style={{ background: '#e8d5f5' }} />С — Отсыпной</div>
+        <div className="legend-item"><div className="legend-dot" style={{ background: '#ebebeb', border: '1px solid #c8d0da' }} />День (пусто)</div>
+        <div className="legend-item"><div className="legend-dot" style={{ background: '#c8c8c8', border: '1px solid #aaa' }} />Ночь (пусто)</div>
+        <div className="legend-item"><span className="comment-dot-demo" />Комментарий</div>
       </div>
 
       {editingCell && (
-        <CellEditor
-          cell={editingCell}
-          onSave={handleCellSave}
-          onClose={() => setEditingCell(null)}
-        />
+        <CellEditor cell={editingCell} onSave={handleCellSave} onClose={() => setEditingCell(null)} />
       )}
-
       {fillingEmp && (
         <ScheduleFiller
-          employee={fillingEmp}
-          year={year}
-          month={month}
-          onApply={handleFillApply}
-          onClose={() => setFillingEmp(null)}
+          employee={fillingEmp} year={year} month={month}
+          onApply={handleFillApply} onClose={() => setFillingEmp(null)}
         />
       )}
-
       {showUpload && (
-        <EmployeeUpload
-          onUpload={handleUpload}
-          onClose={() => setShowUpload(false)}
-        />
+        <EmployeeUpload onUpload={handleUpload} onClose={() => setShowUpload(false)} />
       )}
     </div>
   );
