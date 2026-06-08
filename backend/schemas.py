@@ -21,7 +21,4 @@ class CellUpdate(BaseModel):
     night_status: Optional[str] = None
     day_comment: Optional[str] = None
     night_comment: Optional[str] = None
-
-
-class ShiftUpdate(BaseModel):
-    shift: str  # 'day' | 'night'
+    shift: Optional[str] = None

@@ -7,7 +7,7 @@ import EmployeeUpload from './components/EmployeeUpload';
 import AddEmployee from './components/AddEmployee';
 import {
   fetchEmployees, fetchSchedule, updateCell, getExportUrl,
-  fetchEmployeeShifts, updateEmployeeShift, clearSchedule, deleteEmployee,
+  fetchEmployeeShifts, clearSchedule, deleteEmployee,
 } from './api';
 import './App.css';
 
@@ -117,13 +117,12 @@ export default function App() {
     }
     setScheduleMap(prev => ({ ...prev, [empId]: newSched }));
 
-    // Update shift badge (not for ДНОВ)
+    // Optimistic shift badge update (not for ДНОВ)
     if (shift) {
       setShiftsMap(prev => ({ ...prev, [empId]: shift }));
-      await updateEmployeeShift(empId, year, month, shift);
     }
 
-    // Clear old schedule, then save new
+    // Clear old schedule, then save new (shift stored in each entry)
     await clearSchedule(empId, year, month);
     const calls = Object.entries(updates)
       .filter(([, u]) => Object.keys(u).length > 0)
@@ -131,6 +130,7 @@ export default function App() {
         const patch = {};
         if ('day' in u)        patch.day_status   = u.day;
         if ('nightShift' in u) patch.night_status = u.nightShift;
+        if (shift)             patch.shift        = shift;
         return updateCell(empId, year, month, Number(d), patch);
       });
     await Promise.all(calls);

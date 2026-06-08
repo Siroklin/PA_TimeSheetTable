@@ -4,7 +4,7 @@ from urllib.parse import quote
 
 from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response, StreamingResponse
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
@@ -143,12 +143,12 @@ def update_cell(
         entry.day_comment = cell.day_comment
     if cell.night_comment is not None:
         entry.night_comment = cell.night_comment
+    if cell.shift is not None:
+        entry.shift = cell.shift
 
     db.commit()
     return {"ok": True}
 
-
-# ── Schedule clear ───────────────────────────────────────────────────────────
 
 @app.delete("/api/schedule/{emp_id}/{year}/{month}")
 def clear_schedule(
@@ -164,7 +164,7 @@ def clear_schedule(
     return {"ok": True}
 
 
-# ── Employee shifts ───────────────────────────────────────────────────────────
+# ── Employee shifts (читаем из schedule_entries) ──────────────────────────────
 
 @app.get("/api/employee-shifts")
 def get_employee_shifts(
@@ -178,32 +178,24 @@ def get_employee_shifts(
         .filter(models.Employee.department == department)
         .all()
     ]
-    rows = db.query(models.EmployeeShift).filter(
-        models.EmployeeShift.employee_id.in_(emp_ids),
-        models.EmployeeShift.year == year,
-        models.EmployeeShift.month == month,
-    ).all()
-    return {r.employee_id: r.shift for r in rows}
 
+    rows = (
+        db.query(models.ScheduleEntry.employee_id, models.ScheduleEntry.shift)
+        .filter(
+            models.ScheduleEntry.employee_id.in_(emp_ids),
+            models.ScheduleEntry.year == year,
+            models.ScheduleEntry.month == month,
+            models.ScheduleEntry.shift.isnot(None),
+        )
+        .all()
+    )
 
-@app.put("/api/employee-shifts/{emp_id}/{year}/{month}")
-def update_employee_shift(
-    emp_id: int,
-    year: int,
-    month: int,
-    body: schemas.ShiftUpdate,
-    db: Session = Depends(get_db),
-):
-    row = db.query(models.EmployeeShift).filter_by(
-        employee_id=emp_id, year=year, month=month
-    ).first()
-    if not row:
-        row = models.EmployeeShift(employee_id=emp_id, year=year, month=month, shift=body.shift)
-        db.add(row)
-    else:
-        row.shift = body.shift
-    db.commit()
-    return {"ok": True}
+    # First non-null shift per employee
+    result = {}
+    for emp_id, shift in rows:
+        if emp_id not in result:
+            result[emp_id] = shift
+    return result
 
 
 # ── Export ────────────────────────────────────────────────────────────────────

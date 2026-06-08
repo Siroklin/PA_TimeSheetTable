@@ -39,14 +39,6 @@ export function fetchEmployeeShifts(department, year, month) {
   );
 }
 
-export function updateEmployeeShift(empId, year, month, shift) {
-  return apiFetch(`/api/employee-shifts/${empId}/${year}/${month}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ shift }),
-  });
-}
-
 export function uploadEmployees(employees) {
   return apiFetch('/api/employees/bulk', {
     method: 'POST',
