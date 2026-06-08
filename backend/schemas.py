@@ -7,7 +7,6 @@ class EmployeeCreate(BaseModel):
     name: str
     position: str
     department: str
-    shift: str = 'day'
 
 
 class Employee(EmployeeCreate):
@@ -22,3 +21,7 @@ class CellUpdate(BaseModel):
     night_status: Optional[str] = None
     day_comment: Optional[str] = None
     night_comment: Optional[str] = None
+
+
+class ShiftUpdate(BaseModel):
+    shift: str  # 'day' | 'night'

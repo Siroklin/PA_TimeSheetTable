@@ -2,11 +2,9 @@ import { useState } from 'react';
 import { positions } from '../mockData';
 
 export default function AddEmployee({ department, onSuccess, onClose }) {
-  const [form, setForm] = useState({
-    code: '', name: '', position: positions[0], shift: 'day',
-  });
-  const [saving, setSaving]  = useState(false);
-  const [error, setError]    = useState(null);
+  const [form, setForm] = useState({ code: '', name: '', position: positions[0] });
+  const [saving, setSaving] = useState(false);
+  const [error, setError]   = useState(null);
 
   function set(field, value) {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -31,7 +29,7 @@ export default function AddEmployee({ department, onSuccess, onClose }) {
     }
   }
 
-  const canSave = form.code.trim() && form.name.trim() && form.position && form.shift;
+  const canSave = form.code.trim() && form.name.trim() && form.position;
 
   return (
     <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
@@ -70,26 +68,12 @@ export default function AddEmployee({ department, onSuccess, onClose }) {
             </select>
           </div>
 
-          <div className="form-group">
-            <label>Смена <span className="req">*</span></label>
-            <div className="shift-toggle">
-              <button
-                className={`shift-toggle-btn ${form.shift === 'day' ? 'active' : ''}`}
-                onClick={() => set('shift', 'day')}
-              >
-                Дневная (Д)
-              </button>
-              <button
-                className={`shift-toggle-btn ${form.shift === 'night' ? 'active' : ''}`}
-                onClick={() => set('shift', 'night')}
-              >
-                Ночная (Н)
-              </button>
-            </div>
+          <div style={{ fontSize: '0.82rem', color: '#888', marginTop: 4 }}>
+            Смену сотрудника можно задать прямо в таблице (значок Д/Н в строке).
           </div>
 
           {error && (
-            <div className="upload-errors">
+            <div className="upload-errors" style={{ marginTop: 12 }}>
               <div className="upload-error-line">{error}</div>
             </div>
           )}

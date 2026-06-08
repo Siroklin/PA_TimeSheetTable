@@ -5,7 +5,7 @@ import CellEditor from './components/CellEditor';
 import ScheduleFiller from './components/ScheduleFiller';
 import EmployeeUpload from './components/EmployeeUpload';
 import AddEmployee from './components/AddEmployee';
-import { fetchEmployees, fetchSchedule, updateCell, getExportUrl } from './api';
+import { fetchEmployees, fetchSchedule, updateCell, getExportUrl, fetchEmployeeShifts, updateEmployeeShift } from './api';
 import './App.css';
 
 const MONTH_NAMES_RU = [
@@ -27,10 +27,11 @@ export default function App() {
     shift:      'all',
   });
 
-  const [employees, setEmployees]   = useState([]);
+  const [employees, setEmployees]     = useState([]);
   const [scheduleMap, setScheduleMap] = useState({});
-  const [loading, setLoading]       = useState(false);
-  const [error, setError]           = useState(null);
+  const [shiftsMap, setShiftsMap]     = useState({});
+  const [loading, setLoading]         = useState(false);
+  const [error, setError]             = useState(null);
 
   const [editingCell, setEditingCell]     = useState(null);
   const [fillingEmp, setFillingEmp]       = useState(null);
@@ -43,12 +44,14 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      const [emps, sched] = await Promise.all([
+      const [emps, sched, shifts] = await Promise.all([
         fetchEmployees(filters.department),
         fetchSchedule(filters.department, year, month),
+        fetchEmployeeShifts(filters.department, year, month),
       ]);
       setEmployees(emps);
       setScheduleMap(sched);
+      setShiftsMap(shifts);
     } catch (e) {
       setError('Не удалось загрузить данные. Проверьте подключение к серверу.');
     } finally {
@@ -89,6 +92,11 @@ export default function App() {
     });
 
     await updateCell(empId, year, month, day, patch);
+  }
+
+  async function handleShiftChange(empId, shift) {
+    setShiftsMap(prev => ({ ...prev, [empId]: shift }));
+    await updateEmployeeShift(empId, year, month, shift);
   }
 
   async function handleFillApply(empId, updates) {
@@ -145,11 +153,13 @@ export default function App() {
           <ScheduleTable
             employees={visibleEmployees}
             schedule={scheduleMap}
+            shifts={shiftsMap}
             year={year}
             month={month}
             shiftFilter={filters.shift}
             onCellClick={handleCellClick}
             onFillClick={setFillingEmp}
+            onShiftChange={handleShiftChange}
           />
         </div>
       )}

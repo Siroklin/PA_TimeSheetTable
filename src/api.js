@@ -25,6 +25,20 @@ export function updateCell(empId, year, month, day, patch) {
   });
 }
 
+export function fetchEmployeeShifts(department, year, month) {
+  return apiFetch(
+    `/api/employee-shifts?department=${encodeURIComponent(department)}&year=${year}&month=${month}`
+  );
+}
+
+export function updateEmployeeShift(empId, year, month, shift) {
+  return apiFetch(`/api/employee-shifts/${empId}/${year}/${month}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ shift }),
+  });
+}
+
 export function uploadEmployees(employees) {
   return apiFetch('/api/employees/bulk', {
     method: 'POST',

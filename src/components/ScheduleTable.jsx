@@ -12,7 +12,8 @@ function isWeekend(year, month, day) {
 }
 
 export default function ScheduleTable({
-  employees, schedule, year, month, shiftFilter, onCellClick, onFillClick,
+  employees, schedule, shifts = {}, year, month, shiftFilter,
+  onCellClick, onFillClick, onShiftChange,
 }) {
   const daysInMonth = new Date(year, month, 0).getDate();
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
@@ -45,42 +46,54 @@ export default function ScheduleTable({
           </tr>
         </thead>
         <tbody>
-          {employees.map((emp, idx) => (
-            <tr key={emp.id} className={idx % 2 === 0 ? 'row-even' : 'row-odd'}>
-              <td className="col-name">
-                <div className="emp-info">
-                  <div className="emp-left">
-                    <span className="emp-name">{emp.name}</span>
-                    <span className="emp-position">({emp.position})</span>
+          {employees.map((emp, idx) => {
+            const empShift = shifts[emp.id] ?? shifts[String(emp.id)] ?? null;
+            return (
+              <tr key={emp.id} className={idx % 2 === 0 ? 'row-even' : 'row-odd'}>
+                <td className="col-name">
+                  <div className="emp-info">
+                    <div className="emp-left">
+                      <span className="emp-name">{emp.name}</span>
+                      <span className="emp-position">({emp.position})</span>
+                    </div>
+                    <div className="emp-actions">
+                      <button
+                        className={`shift-badge ${empShift === 'night' ? 'shift-badge-night' : 'shift-badge-day'}`}
+                        title={empShift === 'night' ? 'Ночная смена — нажмите для смены' : 'Дневная смена — нажмите для смены'}
+                        onClick={() => onShiftChange(emp.id, empShift === 'night' ? 'day' : 'night')}
+                      >
+                        {empShift === 'night' ? 'Н' : 'Д'}
+                      </button>
+                      <button
+                        className="btn-fill-schedule"
+                        title="Внести график"
+                        onClick={() => onFillClick(emp)}
+                      >
+                        Граф.
+                      </button>
+                    </div>
                   </div>
-                  <button
-                    className="btn-fill-schedule"
-                    title="Внести график"
-                    onClick={() => onFillClick(emp)}
-                  >
-                    Граф.
-                  </button>
-                </div>
-              </td>
-              {days.map(d => {
-                const cell = schedule[emp.id]?.[d] ?? {};
-                return (
-                  <DayCells
-                    key={d}
-                    dayVal={cell.day ?? ''}
-                    nightVal={cell.nightShift ?? ''}
-                    dayComment={cell.dayComment ?? ''}
-                    nightComment={cell.nightComment ?? ''}
-                    showDay={showDay}
-                    showNight={showNight}
-                    isWeekend={isWeekend(year, month, d)}
-                    onDayClick={() => onCellClick(emp, d, 'day')}
-                    onNightClick={() => onCellClick(emp, d, 'night')}
-                  />
-                );
-              })}
-            </tr>
-          ))}
+                </td>
+                {days.map(d => {
+                  const cell = schedule[emp.id]?.[d] ?? {};
+                  return (
+                    <DayCells
+                      key={d}
+                      dayVal={cell.day ?? ''}
+                      nightVal={cell.nightShift ?? ''}
+                      dayComment={cell.dayComment ?? ''}
+                      nightComment={cell.nightComment ?? ''}
+                      showDay={showDay}
+                      showNight={showNight}
+                      isWeekend={isWeekend(year, month, d)}
+                      onDayClick={() => onCellClick(emp, d, 'day')}
+                      onNightClick={() => onCellClick(emp, d, 'night')}
+                    />
+                  );
+                })}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

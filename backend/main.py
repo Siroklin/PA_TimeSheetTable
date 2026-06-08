@@ -147,6 +147,48 @@ def update_cell(
     return {"ok": True}
 
 
+# ── Employee shifts ───────────────────────────────────────────────────────────
+
+@app.get("/api/employee-shifts")
+def get_employee_shifts(
+    department: str = Query(...),
+    year: int = Query(...),
+    month: int = Query(...),
+    db: Session = Depends(get_db),
+):
+    emp_ids = [
+        e.id for e in db.query(models.Employee)
+        .filter(models.Employee.department == department)
+        .all()
+    ]
+    rows = db.query(models.EmployeeShift).filter(
+        models.EmployeeShift.employee_id.in_(emp_ids),
+        models.EmployeeShift.year == year,
+        models.EmployeeShift.month == month,
+    ).all()
+    return {r.employee_id: r.shift for r in rows}
+
+
+@app.put("/api/employee-shifts/{emp_id}/{year}/{month}")
+def update_employee_shift(
+    emp_id: int,
+    year: int,
+    month: int,
+    body: schemas.ShiftUpdate,
+    db: Session = Depends(get_db),
+):
+    row = db.query(models.EmployeeShift).filter_by(
+        employee_id=emp_id, year=year, month=month
+    ).first()
+    if not row:
+        row = models.EmployeeShift(employee_id=emp_id, year=year, month=month, shift=body.shift)
+        db.add(row)
+    else:
+        row.shift = body.shift
+    db.commit()
+    return {"ok": True}
+
+
 # ── Export ────────────────────────────────────────────────────────────────────
 
 _MONTH_NAMES_FILE = [
