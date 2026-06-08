@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { departments } from '../mockData';
+import { uploadEmployees } from '../api';
 
 const EXAMPLE = `001,Цех №1,Иванов Иван Иванович,Оператор
 002,Склад,Петрова Мария Сергеевна,Кладовщик
@@ -8,7 +9,6 @@ const EXAMPLE = `001,Цех №1,Иванов Иван Иванович,Опер
 function parseCsv(text) {
   const errors = [];
   const rows = [];
-  let nextId = Date.now();
 
   text.trim().split('\n').forEach((line, idx) => {
     const parts = line.split(',').map(s => s.trim());
@@ -21,16 +21,18 @@ function parseCsv(text) {
       errors.push(`Строка ${idx + 1}: неизвестный отдел «${department}». Допустимые: ${departments.join(', ')}`);
       return;
     }
-    rows.push({ id: nextId++, code, department, name, position });
+    rows.push({ code, department, name, position });
   });
 
   return { rows, errors };
 }
 
-export default function EmployeeUpload({ onUpload, onClose }) {
-  const [text, setText] = useState('');
-  const [parsed, setParsed] = useState(null);
-  const [errors, setErrors] = useState([]);
+export default function EmployeeUpload({ onSuccess, onClose }) {
+  const [text, setText]       = useState('');
+  const [parsed, setParsed]   = useState(null);
+  const [errors, setErrors]   = useState([]);
+  const [saving, setSaving]   = useState(false);
+  const [saveErr, setSaveErr] = useState(null);
 
   function handleParse() {
     const { rows, errors } = parseCsv(text);
@@ -50,16 +52,19 @@ export default function EmployeeUpload({ onUpload, onClose }) {
     reader.readAsText(file, 'utf-8');
   }
 
-  function handleConfirm() {
+  async function handleConfirm() {
     if (!parsed || parsed.length === 0) return;
-    // Group by department
-    const grouped = {};
-    for (const emp of parsed) {
-      if (!grouped[emp.department]) grouped[emp.department] = [];
-      grouped[emp.department].push({ id: emp.id, code: emp.code, name: emp.name, position: emp.position });
+    setSaving(true);
+    setSaveErr(null);
+    try {
+      await uploadEmployees(parsed);
+      onSuccess();
+      onClose();
+    } catch {
+      setSaveErr('Ошибка при сохранении. Попробуйте ещё раз.');
+    } finally {
+      setSaving(false);
     }
-    onUpload(grouped);
-    onClose();
   }
 
   return (
@@ -112,8 +117,8 @@ export default function EmployeeUpload({ onUpload, onClose }) {
                     <tr><th>Код</th><th>Отдел</th><th>ФИО</th><th>Должность</th></tr>
                   </thead>
                   <tbody>
-                    {parsed.map(r => (
-                      <tr key={r.id}>
+                    {parsed.map((r, i) => (
+                      <tr key={i}>
                         <td>{r.code}</td>
                         <td>{r.department}</td>
                         <td>{r.name}</td>
@@ -125,16 +130,18 @@ export default function EmployeeUpload({ onUpload, onClose }) {
               </div>
             </div>
           )}
+
+          {saveErr && <div className="upload-errors"><div className="upload-error-line">{saveErr}</div></div>}
         </div>
 
         <div className="modal-footer">
-          <button className="btn-cancel" onClick={onClose}>Отмена</button>
+          <button className="btn-cancel" onClick={onClose} disabled={saving}>Отмена</button>
           <button
             className="btn-save"
             onClick={handleConfirm}
-            disabled={!parsed || parsed.length === 0 || errors.length > 0}
+            disabled={!parsed || parsed.length === 0 || errors.length > 0 || saving}
           >
-            Загрузить
+            {saving ? 'Сохранение...' : 'Загрузить'}
           </button>
         </div>
       </div>

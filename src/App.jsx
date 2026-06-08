@@ -1,10 +1,10 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import Filters from './components/Filters';
 import ScheduleTable from './components/ScheduleTable';
 import CellEditor from './components/CellEditor';
 import ScheduleFiller from './components/ScheduleFiller';
 import EmployeeUpload from './components/EmployeeUpload';
-import { defaultEmployees, generateSchedule } from './mockData';
+import { fetchEmployees, fetchSchedule, updateCell, getExportUrl } from './api';
 import './App.css';
 
 const MONTH_NAMES_RU = [
@@ -26,24 +26,40 @@ export default function App() {
     shift:      'all',
   });
 
-  const [employeesMap, setEmployeesMap] = useState(defaultEmployees);
-  const [scheduleMap, setScheduleMap]   = useState({});
-  const [editingCell, setEditingCell]   = useState(null);
-  const [fillingEmp, setFillingEmp]     = useState(null);
-  const [showUpload, setShowUpload]     = useState(false);
+  const [employees, setEmployees]   = useState([]);
+  const [scheduleMap, setScheduleMap] = useState({});
+  const [loading, setLoading]       = useState(false);
+  const [error, setError]           = useState(null);
+
+  const [editingCell, setEditingCell] = useState(null);
+  const [fillingEmp, setFillingEmp]   = useState(null);
+  const [showUpload, setShowUpload]   = useState(false);
 
   const { year, month } = period;
-  const allEmployees = employeesMap[filters.department] || [];
 
-  useEffect(() => {
-    setScheduleMap(generateSchedule(allEmployees, year, month));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [emps, sched] = await Promise.all([
+        fetchEmployees(filters.department),
+        fetchSchedule(filters.department, year, month),
+      ]);
+      setEmployees(emps);
+      setScheduleMap(sched);
+    } catch (e) {
+      setError('Не удалось загрузить данные. Проверьте подключение к серверу.');
+    } finally {
+      setLoading(false);
+    }
   }, [filters.department, year, month]);
 
+  useEffect(() => { loadData(); }, [loadData]);
+
   const visibleEmployees = useMemo(() => {
-    if (filters.position === 'all') return allEmployees;
-    return allEmployees.filter(e => e.position === filters.position);
-  }, [allEmployees, filters.position]);
+    if (filters.position === 'all') return employees;
+    return employees.filter(e => e.position === filters.position);
+  }, [employees, filters.position]);
 
   function handleCellClick(emp, day, shiftType) {
     const cell = scheduleMap[emp.id]?.[day] ?? {};
@@ -57,36 +73,46 @@ export default function App() {
     });
   }
 
-  function handleCellSave({ empId, day, shiftType, value, comment }) {
+  async function handleCellSave({ empId, day, shiftType, value, comment }) {
+    const patch = shiftType === 'day'
+      ? { day_status: value, day_comment: comment }
+      : { night_status: value, night_comment: comment };
+
+    // Optimistic update
     setScheduleMap(prev => {
       const empDay = { ...(prev[empId]?.[day] ?? {}) };
-      if (shiftType === 'day') {
-        empDay.day        = value;
-        empDay.dayComment = comment;
-      } else {
-        empDay.nightShift    = value;
-        empDay.nightComment  = comment;
-      }
+      if (shiftType === 'day') { empDay.day = value; empDay.dayComment = comment; }
+      else { empDay.nightShift = value; empDay.nightComment = comment; }
       return { ...prev, [empId]: { ...prev[empId], [day]: empDay } };
     });
+
+    await updateCell(empId, year, month, day, patch);
   }
 
-  // Merge per-day update objects { day?, nightShift? } into schedule
-  function handleFillApply(empId, updates) {
+  async function handleFillApply(empId, updates) {
+    // Optimistic update first
     setScheduleMap(prev => {
       const empSched = { ...(prev[empId] ?? {}) };
-      for (const [d, update] of Object.entries(updates)) {
-        empSched[d] = { ...(empSched[d] ?? {}), ...update };
+      for (const [d, u] of Object.entries(updates)) {
+        empSched[d] = { ...(empSched[d] ?? {}), ...u };
       }
       return { ...prev, [empId]: empSched };
     });
-  }
 
-  function handleUpload(grouped) {
-    setEmployeesMap(prev => ({ ...prev, ...grouped }));
+    // Persist all days in parallel
+    const calls = Object.entries(updates)
+      .filter(([, u]) => Object.keys(u).length > 0)
+      .map(([d, u]) => {
+        const patch = {};
+        if ('day' in u)        patch.day_status   = u.day;
+        if ('nightShift' in u) patch.night_status = u.nightShift;
+        return updateCell(empId, year, month, Number(d), patch);
+      });
+    await Promise.all(calls);
   }
 
   const periodLabel = `${MONTH_NAMES_RU[month - 1]} ${year}`;
+  const exportUrl   = getExportUrl(filters.department, year, month);
 
   return (
     <div className="app">
@@ -95,6 +121,9 @@ export default function App() {
           <h1>График работы сотрудников</h1>
           <div className="header-period">График работы на период: <strong>{periodLabel}</strong></div>
         </div>
+        <a className="btn-export" href={exportUrl} download>
+          Скачать Excel
+        </a>
       </header>
 
       <Filters
@@ -105,17 +134,23 @@ export default function App() {
         onUploadClick={() => setShowUpload(true)}
       />
 
-      <div className="table-container">
-        <ScheduleTable
-          employees={visibleEmployees}
-          schedule={scheduleMap}
-          year={year}
-          month={month}
-          shiftFilter={filters.shift}
-          onCellClick={handleCellClick}
-          onFillClick={setFillingEmp}
-        />
-      </div>
+      {error && <div className="load-error">{error}</div>}
+
+      {loading ? (
+        <div className="load-spinner">Загрузка...</div>
+      ) : (
+        <div className="table-container">
+          <ScheduleTable
+            employees={visibleEmployees}
+            schedule={scheduleMap}
+            year={year}
+            month={month}
+            shiftFilter={filters.shift}
+            onCellClick={handleCellClick}
+            onFillClick={setFillingEmp}
+          />
+        </div>
+      )}
 
       <div className="legend">
         <div className="legend-item"><div className="legend-dot" style={{ background: '#d4edda' }} />Р — Работает</div>
@@ -138,7 +173,7 @@ export default function App() {
         />
       )}
       {showUpload && (
-        <EmployeeUpload onUpload={handleUpload} onClose={() => setShowUpload(false)} />
+        <EmployeeUpload onSuccess={loadData} onClose={() => setShowUpload(false)} />
       )}
     </div>
   );

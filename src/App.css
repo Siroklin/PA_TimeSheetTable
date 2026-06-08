@@ -21,6 +21,42 @@ body {
   color: white;
   padding: 16px 24px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.btn-export {
+  display: inline-block;
+  padding: 8px 18px;
+  background: #2e7d32;
+  color: #fff;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.btn-export:hover { background: #1b5e20; }
+
+.load-spinner {
+  text-align: center;
+  padding: 48px;
+  color: #666;
+  font-size: 1rem;
+}
+
+.load-error {
+  margin: 16px 24px;
+  padding: 12px 16px;
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 6px;
+  color: #721c24;
+  font-size: 0.9rem;
 }
 
 .header-main {
