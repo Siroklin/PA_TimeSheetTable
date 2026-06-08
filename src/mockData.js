@@ -45,8 +45,9 @@ export const DAY_EMPTY_COLOR   = '#ebebeb';
 export const NIGHT_EMPTY_COLOR = '#c8c8c8';
 
 export function getCellColor(value, isNight) {
-  if (!value) return isNight ? NIGHT_EMPTY_COLOR : DAY_EMPTY_COLOR;
-  return SHIFT_COLORS[value] ?? (isNight ? NIGHT_EMPTY_COLOR : DAY_EMPTY_COLOR);
+  if (isNight) return NIGHT_EMPTY_COLOR;          // ночь всегда серая
+  if (!value) return DAY_EMPTY_COLOR;
+  return SHIFT_COLORS[value] ?? DAY_EMPTY_COLOR;  // день — по статусу
 }
 
 export function generateSchedule(employeeList, year, month) {

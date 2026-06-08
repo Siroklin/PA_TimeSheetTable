@@ -12,14 +12,11 @@ function isWeekend(year, month, day) {
 }
 
 export default function ScheduleTable({
-  employees, schedule, shifts = {}, year, month, shiftFilter,
+  employees, schedule, shifts = {}, year, month,
   onCellClick, onFillClick, onDeleteEmployee,
 }) {
   const daysInMonth = new Date(year, month, 0).getDate();
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-
-  const showDay   = shiftFilter === 'all' || shiftFilter === 'day';
-  const showNight = shiftFilter === 'all' || shiftFilter === 'night';
 
   return (
     <div className="table-wrapper">
@@ -27,21 +24,16 @@ export default function ScheduleTable({
         <thead>
           <tr className="header-row-days">
             <th className="col-name" rowSpan={2}>ФИО сотрудника</th>
-            {days.map(d => {
-              const colSpan = (showDay ? 1 : 0) + (showNight ? 1 : 0);
-              if (colSpan === 0) return null;
-              const weekend = isWeekend(year, month, d);
-              return (
-                <th key={d} colSpan={colSpan} className={`day-header ${weekend ? 'weekend' : ''}`}>
-                  <div className="day-num">{d}</div>
-                  <div className="day-name">{DAY_NAMES[getDayOfWeek(year, month, d)]}</div>
-                </th>
-              );
-            })}
+            {days.map(d => (
+              <th key={d} colSpan={2} className={`day-header ${isWeekend(year, month, d) ? 'weekend' : ''}`}>
+                <div className="day-num">{d}</div>
+                <div className="day-name">{DAY_NAMES[getDayOfWeek(year, month, d)]}</div>
+              </th>
+            ))}
           </tr>
           <tr className="header-row-shifts">
             {days.map(d => (
-              <ShiftHeaders key={d} showDay={showDay} showNight={showNight} />
+              <ShiftHeaders key={d} />
             ))}
           </tr>
         </thead>
@@ -89,8 +81,6 @@ export default function ScheduleTable({
                       nightVal={cell.nightShift ?? ''}
                       dayComment={cell.dayComment ?? ''}
                       nightComment={cell.nightComment ?? ''}
-                      showDay={showDay}
-                      showNight={showNight}
                       isWeekend={isWeekend(year, month, d)}
                       onDayClick={() => onCellClick(emp, d, 'day')}
                       onNightClick={() => onCellClick(emp, d, 'night')}
@@ -106,40 +96,36 @@ export default function ScheduleTable({
   );
 }
 
-function ShiftHeaders({ showDay, showNight }) {
+function ShiftHeaders() {
   return (
     <>
-      {showDay   && <th className="shift-header shift-day">Д</th>}
-      {showNight && <th className="shift-header shift-night">Н</th>}
+      <th className="shift-header shift-day">Д</th>
+      <th className="shift-header shift-night">Н</th>
     </>
   );
 }
 
-function DayCells({ dayVal, nightVal, dayComment, nightComment, showDay, showNight, isWeekend, onDayClick, onNightClick }) {
+function DayCells({ dayVal, nightVal, dayComment, nightComment, isWeekend, onDayClick, onNightClick }) {
   return (
     <>
-      {showDay && (
-        <td
-          className={`cell cell-day ${isWeekend ? 'cell-weekend' : ''}`}
-          style={{ backgroundColor: getCellColor(dayVal, false) }}
-          onClick={onDayClick}
-          title={dayComment || undefined}
-        >
-          {dayVal}
-          {dayComment && <span className="comment-dot" />}
-        </td>
-      )}
-      {showNight && (
-        <td
-          className="cell cell-night"
-          style={{ backgroundColor: getCellColor(nightVal, true) }}
-          onClick={onNightClick}
-          title={nightComment || undefined}
-        >
-          {nightVal}
-          {nightComment && <span className="comment-dot" />}
-        </td>
-      )}
+      <td
+        className={`cell cell-day ${isWeekend ? 'cell-weekend' : ''}`}
+        style={{ backgroundColor: getCellColor(dayVal, false) }}
+        onClick={onDayClick}
+        title={dayComment || undefined}
+      >
+        {dayVal}
+        {dayComment && <span className="comment-dot" />}
+      </td>
+      <td
+        className="cell cell-night"
+        style={{ backgroundColor: getCellColor(nightVal, true) }}
+        onClick={onNightClick}
+        title={nightComment || undefined}
+      >
+        {nightVal}
+        {nightComment && <span className="comment-dot" />}
+      </td>
     </>
   );
 }

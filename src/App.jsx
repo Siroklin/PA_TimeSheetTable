@@ -59,21 +59,25 @@ export default function App() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // Filter rows: by position, then by assigned shift
+  // Filter rows: by position, then by whether employee has working days in chosen shift
   const visibleEmployees = useMemo(() => {
     let result = employees;
     if (filters.position !== 'all') {
       result = result.filter(e => e.position === filters.position);
     }
-    if (filters.shift !== 'all') {
+    if (filters.shift === 'day') {
       result = result.filter(e => {
-        const empShift = shiftsMap[e.id] ?? shiftsMap[String(e.id)];
-        if (filters.shift === 'night') return empShift === 'night';
-        return empShift === 'day' || !empShift; // day or not yet assigned
+        const sched = scheduleMap[e.id] ?? scheduleMap[String(e.id)] ?? {};
+        return Object.values(sched).some(cell => cell.day === 'Р');
+      });
+    } else if (filters.shift === 'night') {
+      result = result.filter(e => {
+        const sched = scheduleMap[e.id] ?? scheduleMap[String(e.id)] ?? {};
+        return Object.values(sched).some(cell => cell.nightShift === 'Р');
       });
     }
     return result;
-  }, [employees, filters.position, filters.shift, shiftsMap]);
+  }, [employees, filters.position, filters.shift, scheduleMap]);
 
   function handleCellClick(emp, day, shiftType) {
     const cell = scheduleMap[emp.id]?.[day] ?? {};
@@ -176,7 +180,6 @@ export default function App() {
             shifts={shiftsMap}
             year={year}
             month={month}
-            shiftFilter={filters.shift}
             onCellClick={handleCellClick}
             onFillClick={setFillingEmp}
             onDeleteEmployee={handleDeleteEmployee}
@@ -185,13 +188,12 @@ export default function App() {
       )}
 
       <div className="legend">
-        <div className="legend-item"><div className="legend-dot" style={{ background: '#d4edda' }} />Р — Работает</div>
+        <div className="legend-item"><div className="legend-dot" style={{ background: '#d4edda' }} />Р — Работает (день)</div>
         <div className="legend-item"><div className="legend-dot" style={{ background: '#fff3cd' }} />В — Выходной</div>
         <div className="legend-item"><div className="legend-dot" style={{ background: '#cce5ff' }} />О — Отпуск</div>
         <div className="legend-item"><div className="legend-dot" style={{ background: '#f8d7da' }} />Б — Больничный</div>
         <div className="legend-item"><div className="legend-dot" style={{ background: '#e8d5f5' }} />С — Отсыпной</div>
-        <div className="legend-item"><div className="legend-dot" style={{ background: '#ebebeb', border: '1px solid #c8d0da' }} />День (пусто)</div>
-        <div className="legend-item"><div className="legend-dot" style={{ background: '#c8c8c8', border: '1px solid #aaa' }} />Ночь (пусто)</div>
+        <div className="legend-item"><div className="legend-dot" style={{ background: '#c8c8c8', border: '1px solid #aaa' }} />Ночь (всегда серая)</div>
         <div className="legend-item"><span className="comment-dot-demo" />Комментарий</div>
       </div>
 
