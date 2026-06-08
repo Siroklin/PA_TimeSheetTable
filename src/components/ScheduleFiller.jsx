@@ -36,7 +36,8 @@ export default function ScheduleFiller({ employee, year, month, onApply, onClose
 
   function handleApply() {
     const updates = applyPattern(pattern, year, month, { startDate: parsedStart, shift });
-    onApply(employee.id, updates);
+    // For ДНОВ the employee works both shifts — don't update the shift badge
+    onApply(employee.id, updates, isDNOV ? null : shift);
     onClose();
   }
 

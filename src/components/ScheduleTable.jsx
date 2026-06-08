@@ -13,7 +13,7 @@ function isWeekend(year, month, day) {
 
 export default function ScheduleTable({
   employees, schedule, shifts = {}, year, month, shiftFilter,
-  onCellClick, onFillClick, onShiftChange,
+  onCellClick, onFillClick, onDeleteEmployee,
 }) {
   const daysInMonth = new Date(year, month, 0).getDate();
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
@@ -57,19 +57,25 @@ export default function ScheduleTable({
                       <span className="emp-position">({emp.position})</span>
                     </div>
                     <div className="emp-actions">
-                      <button
+                      <span
                         className={`shift-badge ${empShift === 'night' ? 'shift-badge-night' : 'shift-badge-day'}`}
-                        title={empShift === 'night' ? 'Ночная смена — нажмите для смены' : 'Дневная смена — нажмите для смены'}
-                        onClick={() => onShiftChange(emp.id, empShift === 'night' ? 'day' : 'night')}
+                        title={empShift === 'night' ? 'Ночная смена' : 'Дневная смена'}
                       >
                         {empShift === 'night' ? 'Н' : 'Д'}
-                      </button>
+                      </span>
                       <button
                         className="btn-fill-schedule"
                         title="Внести график"
                         onClick={() => onFillClick(emp)}
                       >
                         Граф.
+                      </button>
+                      <button
+                        className="btn-delete-emp"
+                        title="Удалить сотрудника"
+                        onClick={() => onDeleteEmployee(emp.id)}
+                      >
+                        ×
                       </button>
                     </div>
                   </div>

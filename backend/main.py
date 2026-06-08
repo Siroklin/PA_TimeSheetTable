@@ -1,9 +1,10 @@
 import io
 import os
+from urllib.parse import quote
 
 from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
@@ -147,6 +148,22 @@ def update_cell(
     return {"ok": True}
 
 
+# ── Schedule clear ───────────────────────────────────────────────────────────
+
+@app.delete("/api/schedule/{emp_id}/{year}/{month}")
+def clear_schedule(
+    emp_id: int,
+    year: int,
+    month: int,
+    db: Session = Depends(get_db),
+):
+    db.query(models.ScheduleEntry).filter_by(
+        employee_id=emp_id, year=year, month=month
+    ).delete()
+    db.commit()
+    return {"ok": True}
+
+
 # ── Employee shifts ───────────────────────────────────────────────────────────
 
 @app.get("/api/employee-shifts")
@@ -231,13 +248,18 @@ def export_excel(
     wb = generate_excel(employees, schedule_map, year, month, department)
     buf = io.BytesIO()
     wb.save(buf)
-    buf.seek(0)
 
     filename = f"график_{department}_{_MONTH_NAMES_FILE[month - 1]}_{year}.xlsx"
-    return StreamingResponse(
-        buf,
+    encoded  = quote(filename, encoding="utf-8")
+    return Response(
+        content=buf.getvalue(),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{filename}"},
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="schedule_{year}_{month:02d}.xlsx";'
+                f" filename*=UTF-8''{encoded}"
+            )
+        },
     )
 
 

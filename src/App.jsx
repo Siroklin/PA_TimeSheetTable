@@ -5,13 +5,11 @@ import CellEditor from './components/CellEditor';
 import ScheduleFiller from './components/ScheduleFiller';
 import EmployeeUpload from './components/EmployeeUpload';
 import AddEmployee from './components/AddEmployee';
-import { fetchEmployees, fetchSchedule, updateCell, getExportUrl, fetchEmployeeShifts, updateEmployeeShift } from './api';
+import {
+  fetchEmployees, fetchSchedule, updateCell, getExportUrl,
+  fetchEmployeeShifts, updateEmployeeShift, clearSchedule, deleteEmployee,
+} from './api';
 import './App.css';
-
-const MONTH_NAMES_RU = [
-  'Январь','Февраль','Март','Апрель','Май','Июнь',
-  'Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь',
-];
 
 export default function App() {
   const now = new Date();
@@ -33,9 +31,9 @@ export default function App() {
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState(null);
 
-  const [editingCell, setEditingCell]     = useState(null);
-  const [fillingEmp, setFillingEmp]       = useState(null);
-  const [showUpload, setShowUpload]       = useState(false);
+  const [editingCell, setEditingCell]         = useState(null);
+  const [fillingEmp, setFillingEmp]           = useState(null);
+  const [showUpload, setShowUpload]           = useState(false);
   const [showAddEmployee, setShowAddEmployee] = useState(false);
 
   const { year, month } = period;
@@ -52,7 +50,7 @@ export default function App() {
       setEmployees(emps);
       setScheduleMap(sched);
       setShiftsMap(shifts);
-    } catch (e) {
+    } catch {
       setError('Не удалось загрузить данные. Проверьте подключение к серверу.');
     } finally {
       setLoading(false);
@@ -61,10 +59,21 @@ export default function App() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Filter rows: by position, then by assigned shift
   const visibleEmployees = useMemo(() => {
-    if (filters.position === 'all') return employees;
-    return employees.filter(e => e.position === filters.position);
-  }, [employees, filters.position]);
+    let result = employees;
+    if (filters.position !== 'all') {
+      result = result.filter(e => e.position === filters.position);
+    }
+    if (filters.shift !== 'all') {
+      result = result.filter(e => {
+        const empShift = shiftsMap[e.id] ?? shiftsMap[String(e.id)];
+        if (filters.shift === 'night') return empShift === 'night';
+        return empShift === 'day' || !empShift; // day or not yet assigned
+      });
+    }
+    return result;
+  }, [employees, filters.position, filters.shift, shiftsMap]);
 
   function handleCellClick(emp, day, shiftType) {
     const cell = scheduleMap[emp.id]?.[day] ?? {};
@@ -83,7 +92,6 @@ export default function App() {
       ? { day_status: value, day_comment: comment }
       : { night_status: value, night_comment: comment };
 
-    // Optimistic update
     setScheduleMap(prev => {
       const empDay = { ...(prev[empId]?.[day] ?? {}) };
       if (shiftType === 'day') { empDay.day = value; empDay.dayComment = comment; }
@@ -94,22 +102,29 @@ export default function App() {
     await updateCell(empId, year, month, day, patch);
   }
 
-  async function handleShiftChange(empId, shift) {
-    setShiftsMap(prev => ({ ...prev, [empId]: shift }));
-    await updateEmployeeShift(empId, year, month, shift);
-  }
+  async function handleFillApply(empId, updates, shift) {
+    // Optimistic: replace entire month with pattern
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const newSched = {};
+    for (let d = 1; d <= daysInMonth; d++) {
+      const u = updates[d] ?? {};
+      newSched[d] = {
+        day:          u.day          ?? '',
+        nightShift:   u.nightShift   ?? '',
+        dayComment:   '',
+        nightComment: '',
+      };
+    }
+    setScheduleMap(prev => ({ ...prev, [empId]: newSched }));
 
-  async function handleFillApply(empId, updates) {
-    // Optimistic update first
-    setScheduleMap(prev => {
-      const empSched = { ...(prev[empId] ?? {}) };
-      for (const [d, u] of Object.entries(updates)) {
-        empSched[d] = { ...(empSched[d] ?? {}), ...u };
-      }
-      return { ...prev, [empId]: empSched };
-    });
+    // Update shift badge (not for ДНОВ)
+    if (shift) {
+      setShiftsMap(prev => ({ ...prev, [empId]: shift }));
+      await updateEmployeeShift(empId, year, month, shift);
+    }
 
-    // Persist all days in parallel
+    // Clear old schedule, then save new
+    await clearSchedule(empId, year, month);
     const calls = Object.entries(updates)
       .filter(([, u]) => Object.keys(u).length > 0)
       .map(([d, u]) => {
@@ -121,8 +136,13 @@ export default function App() {
     await Promise.all(calls);
   }
 
-  const periodLabel = `${MONTH_NAMES_RU[month - 1]} ${year}`;
-  const exportUrl   = getExportUrl(filters.department, year, month);
+  async function handleDeleteEmployee(empId) {
+    if (!confirm('Удалить сотрудника из системы? Это действие необратимо.')) return;
+    await deleteEmployee(empId);
+    loadData();
+  }
+
+  const exportUrl = getExportUrl(filters.department, year, month);
 
   return (
     <div className="app">
@@ -159,7 +179,7 @@ export default function App() {
             shiftFilter={filters.shift}
             onCellClick={handleCellClick}
             onFillClick={setFillingEmp}
-            onShiftChange={handleShiftChange}
+            onDeleteEmployee={handleDeleteEmployee}
           />
         </div>
       )}

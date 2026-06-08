@@ -25,6 +25,14 @@ export function updateCell(empId, year, month, day, patch) {
   });
 }
 
+export function clearSchedule(empId, year, month) {
+  return apiFetch(`/api/schedule/${empId}/${year}/${month}`, { method: 'DELETE' });
+}
+
+export function deleteEmployee(empId) {
+  return apiFetch(`/api/employees/${empId}`, { method: 'DELETE' });
+}
+
 export function fetchEmployeeShifts(department, year, month) {
   return apiFetch(
     `/api/employee-shifts?department=${encodeURIComponent(department)}&year=${year}&month=${month}`
