@@ -4,6 +4,7 @@ import ScheduleTable from './components/ScheduleTable';
 import CellEditor from './components/CellEditor';
 import ScheduleFiller from './components/ScheduleFiller';
 import EmployeeUpload from './components/EmployeeUpload';
+import AddEmployee from './components/AddEmployee';
 import { fetchEmployees, fetchSchedule, updateCell, getExportUrl } from './api';
 import './App.css';
 
@@ -31,9 +32,10 @@ export default function App() {
   const [loading, setLoading]       = useState(false);
   const [error, setError]           = useState(null);
 
-  const [editingCell, setEditingCell] = useState(null);
-  const [fillingEmp, setFillingEmp]   = useState(null);
-  const [showUpload, setShowUpload]   = useState(false);
+  const [editingCell, setEditingCell]     = useState(null);
+  const [fillingEmp, setFillingEmp]       = useState(null);
+  const [showUpload, setShowUpload]       = useState(false);
+  const [showAddEmployee, setShowAddEmployee] = useState(false);
 
   const { year, month } = period;
 
@@ -119,7 +121,6 @@ export default function App() {
       <header className="app-header">
         <div className="header-main">
           <h1>График работы сотрудников</h1>
-          <div className="header-period">График работы на период: <strong>{periodLabel}</strong></div>
         </div>
         <a className="btn-export" href={exportUrl} download>
           Скачать Excel
@@ -131,6 +132,7 @@ export default function App() {
         period={period}
         onFilterChange={patch => setFilters(prev => ({ ...prev, ...patch }))}
         onPeriodChange={setPeriod}
+        onAddEmployee={() => setShowAddEmployee(true)}
         onUploadClick={() => setShowUpload(true)}
       />
 
@@ -174,6 +176,13 @@ export default function App() {
       )}
       {showUpload && (
         <EmployeeUpload onSuccess={loadData} onClose={() => setShowUpload(false)} />
+      )}
+      {showAddEmployee && (
+        <AddEmployee
+          department={filters.department}
+          onSuccess={loadData}
+          onClose={() => setShowAddEmployee(false)}
+        />
       )}
     </div>
   );

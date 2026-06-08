@@ -188,6 +188,91 @@ body {
   background: #fff;
 }
 
+/* Service menu */
+.service-menu-wrap {
+  position: relative;
+  justify-content: flex-end;
+}
+
+.btn-service {
+  padding: 7px 16px;
+  background: #1a3c5e;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.btn-service:hover { background: #14304e; }
+
+.service-arrow { font-size: 0.7rem; }
+
+.service-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: #fff;
+  border: 1px solid #dde2e8;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  z-index: 100;
+  min-width: 200px;
+  overflow: hidden;
+}
+
+.service-dropdown button {
+  display: block;
+  width: 100%;
+  padding: 11px 16px;
+  text-align: left;
+  background: none;
+  border: none;
+  font-size: 0.9rem;
+  color: #333;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.service-dropdown button:hover { background: #f0f4f8; }
+.service-dropdown button + button { border-top: 1px solid #eee; }
+
+/* Add employee form */
+.modal-add-emp { max-width: 420px; }
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.form-input {
+  padding: 8px 12px;
+  border: 1px solid #c8d0da;
+  border-radius: 6px;
+  font-size: 0.92rem;
+  outline: none;
+  transition: border-color 0.2s;
+  background: #fafbfc;
+  width: 100%;
+}
+.form-input:focus { border-color: #1a3c5e; background: #fff; }
+
+.req { color: #e53935; }
+
 /* Table */
 .table-container {
   flex: 1;

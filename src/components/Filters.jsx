@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react';
 import { departments, positions } from '../mockData';
 
 const MONTHS = [
@@ -10,9 +11,22 @@ function getYears() {
   return [cur - 1, cur, cur + 1, cur + 2];
 }
 
-export default function Filters({ filters, period, onFilterChange, onPeriodChange, onUploadClick }) {
+export default function Filters({
+  filters, period, onFilterChange, onPeriodChange, onAddEmployee, onUploadClick,
+}) {
   const { department, position, shift } = filters;
   const { year, month } = period;
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleClick(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [menuOpen]);
 
   function prevMonth() {
     if (month === 1) onPeriodChange({ year: year - 1, month: 12 });
@@ -25,7 +39,6 @@ export default function Filters({ filters, period, onFilterChange, onPeriodChang
 
   return (
     <div className="filters">
-      {/* Period navigator */}
       <div className="period-nav">
         <button className="period-arrow" onClick={prevMonth} title="Предыдущий месяц">‹</button>
         <div className="period-selects">
@@ -73,9 +86,21 @@ export default function Filters({ filters, period, onFilterChange, onPeriodChang
         </select>
       </div>
 
-      <div className="filter-group" style={{ justifyContent: 'flex-end', marginLeft: 'auto' }}>
+      <div className="filter-group service-menu-wrap" ref={menuRef} style={{ marginLeft: 'auto' }}>
         <label style={{ visibility: 'hidden' }}>_</label>
-        <button className="btn-upload" onClick={onUploadClick}>Загрузить сотрудников</button>
+        <button className="btn-service" onClick={() => setMenuOpen(o => !o)}>
+          Сервис <span className="service-arrow">{menuOpen ? '▴' : '▾'}</span>
+        </button>
+        {menuOpen && (
+          <div className="service-dropdown">
+            <button onClick={() => { onAddEmployee(); setMenuOpen(false); }}>
+              Добавить сотрудника
+            </button>
+            <button onClick={() => { onUploadClick(); setMenuOpen(false); }}>
+              Загрузить сотрудников
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

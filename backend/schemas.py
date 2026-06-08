@@ -7,6 +7,7 @@ class EmployeeCreate(BaseModel):
     name: str
     position: str
     department: str
+    shift: str = 'day'
 
 
 class Employee(EmployeeCreate):
