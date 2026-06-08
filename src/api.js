@@ -50,3 +50,48 @@ export function uploadEmployees(employees) {
 export function getExportUrl(department, year, month) {
   return `/api/export/excel?department=${encodeURIComponent(department)}&year=${year}&month=${month}`;
 }
+
+// ── Department-Position reference ─────────────────────────────────────────────
+
+export function fetchPositions(department) {
+  return apiFetch(`/api/positions?department=${encodeURIComponent(department)}`);
+}
+
+export function addPosition(department, position) {
+  return apiFetch('/api/positions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ department, position }),
+  });
+}
+
+export function deletePosition(posId) {
+  return apiFetch(`/api/positions/${posId}`, { method: 'DELETE' });
+}
+
+// ── Schedule patterns ─────────────────────────────────────────────────────────
+
+export function savePattern(employeeId, year, month, { pattern, shift, startDate }) {
+  return apiFetch('/api/schedule-patterns', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      employee_id: employeeId,
+      year, month,
+      pattern,
+      shift: shift ?? null,
+      start_date: startDate,
+    }),
+  });
+}
+
+// ── Copy schedule ─────────────────────────────────────────────────────────────
+
+export function copySchedule(department, fromYear, fromMonth, toYear, toMonth) {
+  return apiFetch(
+    `/api/copy-schedule?department=${encodeURIComponent(department)}` +
+    `&from_year=${fromYear}&from_month=${fromMonth}` +
+    `&to_year=${toYear}&to_month=${toMonth}`,
+    { method: 'POST' }
+  );
+}

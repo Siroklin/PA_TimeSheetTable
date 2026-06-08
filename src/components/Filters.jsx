@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { departments, positions } from '../mockData';
+import { departments } from '../mockData';
 
 const MONTHS = [
   'Январь','Февраль','Март','Апрель','Май','Июнь',
@@ -12,7 +12,9 @@ function getYears() {
 }
 
 export default function Filters({
-  filters, period, onFilterChange, onPeriodChange, onAddEmployee, onUploadClick,
+  filters, period, positions,
+  onFilterChange, onPeriodChange,
+  onAddEmployee, onUploadClick, onManagePositions, onCopySchedule,
 }) {
   const { department, position, shift } = filters;
   const { year, month } = period;
@@ -35,6 +37,11 @@ export default function Filters({
   function nextMonth() {
     if (month === 12) onPeriodChange({ year: year + 1, month: 1 });
     else onPeriodChange({ year, month: month + 1 });
+  }
+
+  function menuAction(fn) {
+    fn();
+    setMenuOpen(false);
   }
 
   return (
@@ -64,7 +71,7 @@ export default function Filters({
 
       <div className="filter-group">
         <label>Отдел</label>
-        <select value={department} onChange={e => onFilterChange({ department: e.target.value })}>
+        <select value={department} onChange={e => onFilterChange({ department: e.target.value, position: 'all' })}>
           {departments.map(d => <option key={d} value={d}>{d}</option>)}
         </select>
       </div>
@@ -73,7 +80,7 @@ export default function Filters({
         <label>Должность</label>
         <select value={position} onChange={e => onFilterChange({ position: e.target.value })}>
           <option value="all">Все должности</option>
-          {positions.map(p => <option key={p} value={p}>{p}</option>)}
+          {(positions || []).map(p => <option key={p.id} value={p.position}>{p.position}</option>)}
         </select>
       </div>
 
@@ -93,12 +100,12 @@ export default function Filters({
         </button>
         {menuOpen && (
           <div className="service-dropdown">
-            <button onClick={() => { onAddEmployee(); setMenuOpen(false); }}>
-              Добавить сотрудника
-            </button>
-            <button onClick={() => { onUploadClick(); setMenuOpen(false); }}>
-              Загрузить сотрудников
-            </button>
+            <button onClick={() => menuAction(onAddEmployee)}>Добавить сотрудника</button>
+            <button onClick={() => menuAction(onUploadClick)}>Загрузить сотрудников</button>
+            <div className="service-separator" />
+            <button onClick={() => menuAction(onManagePositions)}>Управление должностями</button>
+            <div className="service-separator" />
+            <button onClick={() => menuAction(onCopySchedule)}>Копировать расписание</button>
           </div>
         )}
       </div>

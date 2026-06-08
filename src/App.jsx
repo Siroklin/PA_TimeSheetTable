@@ -5,9 +5,12 @@ import CellEditor from './components/CellEditor';
 import ScheduleFiller from './components/ScheduleFiller';
 import EmployeeUpload from './components/EmployeeUpload';
 import AddEmployee from './components/AddEmployee';
+import AddPosition from './components/AddPosition';
+import CopySchedule from './components/CopySchedule';
 import {
   fetchEmployees, fetchSchedule, updateCell, getExportUrl,
   fetchEmployeeShifts, clearSchedule, deleteEmployee,
+  fetchPositions, savePattern,
 } from './api';
 import './App.css';
 
@@ -28,15 +31,27 @@ export default function App() {
   const [employees, setEmployees]     = useState([]);
   const [scheduleMap, setScheduleMap] = useState({});
   const [shiftsMap, setShiftsMap]     = useState({});
+  const [positions, setPositions]     = useState([]);
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState(null);
 
-  const [editingCell, setEditingCell]         = useState(null);
-  const [fillingEmp, setFillingEmp]           = useState(null);
-  const [showUpload, setShowUpload]           = useState(false);
-  const [showAddEmployee, setShowAddEmployee] = useState(false);
+  const [editingCell, setEditingCell]             = useState(null);
+  const [fillingEmp, setFillingEmp]               = useState(null);
+  const [showUpload, setShowUpload]               = useState(false);
+  const [showAddEmployee, setShowAddEmployee]     = useState(false);
+  const [showAddPosition, setShowAddPosition]     = useState(false);
+  const [showCopySchedule, setShowCopySchedule]   = useState(false);
 
   const { year, month } = period;
+
+  const loadPositions = useCallback(async (dept) => {
+    try {
+      const list = await fetchPositions(dept);
+      setPositions(list);
+    } catch {
+      setPositions([]);
+    }
+  }, []);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -59,7 +74,9 @@ export default function App() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // Filter rows: by position, then by whether employee has working days in chosen shift
+  useEffect(() => { loadPositions(filters.department); }, [filters.department, loadPositions]);
+
+  // Filter rows: by position, then by shift
   const visibleEmployees = useMemo(() => {
     let result = employees;
     if (filters.position !== 'all') {
@@ -106,7 +123,9 @@ export default function App() {
     await updateCell(empId, year, month, day, patch);
   }
 
-  async function handleFillApply(empId, updates, shift) {
+  async function handleFillApply(empId, updates, patternInfo) {
+    const { pattern, shift, startDate } = patternInfo || {};
+
     // Optimistic: replace entire month with pattern
     const daysInMonth = new Date(year, month, 0).getDate();
     const newSched = {};
@@ -121,12 +140,16 @@ export default function App() {
     }
     setScheduleMap(prev => ({ ...prev, [empId]: newSched }));
 
-    // Optimistic shift badge update (not for ДНОВ)
     if (shift) {
       setShiftsMap(prev => ({ ...prev, [empId]: shift }));
     }
 
-    // Clear old schedule, then save new (shift stored in each entry)
+    // Save pattern metadata for future copy operations
+    if (pattern && startDate) {
+      savePattern(empId, year, month, { pattern, shift, startDate }).catch(() => {});
+    }
+
+    // Clear old schedule then write new entries
     await clearSchedule(empId, year, month);
     const calls = Object.entries(updates)
       .filter(([, u]) => Object.keys(u).length > 0)
@@ -146,6 +169,12 @@ export default function App() {
     loadData();
   }
 
+  function handleCopySuccess({ year: toYear, month: toMonth }) {
+    // If copied to current view, reload
+    if (toYear === year && toMonth === month) loadData();
+    setShowCopySchedule(false);
+  }
+
   const exportUrl = getExportUrl(filters.department, year, month);
 
   return (
@@ -162,10 +191,13 @@ export default function App() {
       <Filters
         filters={filters}
         period={period}
+        positions={positions}
         onFilterChange={patch => setFilters(prev => ({ ...prev, ...patch }))}
         onPeriodChange={setPeriod}
         onAddEmployee={() => setShowAddEmployee(true)}
         onUploadClick={() => setShowUpload(true)}
+        onManagePositions={() => setShowAddPosition(true)}
+        onCopySchedule={() => setShowCopySchedule(true)}
       />
 
       {error && <div className="load-error">{error}</div>}
@@ -212,8 +244,26 @@ export default function App() {
       {showAddEmployee && (
         <AddEmployee
           department={filters.department}
+          positions={positions}
           onSuccess={loadData}
           onClose={() => setShowAddEmployee(false)}
+        />
+      )}
+      {showAddPosition && (
+        <AddPosition
+          department={filters.department}
+          positions={positions}
+          onSuccess={dept => loadPositions(dept || filters.department)}
+          onClose={() => setShowAddPosition(false)}
+        />
+      )}
+      {showCopySchedule && (
+        <CopySchedule
+          department={filters.department}
+          fromYear={year}
+          fromMonth={month}
+          onSuccess={handleCopySuccess}
+          onClose={() => setShowCopySchedule(false)}
         />
       )}
     </div>

@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { positions } from '../mockData';
 
-export default function AddEmployee({ department, onSuccess, onClose }) {
-  const [form, setForm] = useState({ code: '', name: '', position: positions[0] });
+export default function AddEmployee({ department, positions, onSuccess, onClose }) {
+  const firstPos = (positions && positions.length > 0) ? positions[0].position : '';
+  const [form, setForm]   = useState({ code: '', name: '', position: firstPos });
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState(null);
 
@@ -29,7 +29,7 @@ export default function AddEmployee({ department, onSuccess, onClose }) {
     }
   }
 
-  const canSave = form.code.trim() && form.name.trim() && form.position;
+  const canSave = form.code.trim() && form.name.trim() && form.position.trim();
 
   return (
     <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
@@ -63,14 +63,29 @@ export default function AddEmployee({ department, onSuccess, onClose }) {
 
           <div className="form-group">
             <label>Должность <span className="req">*</span></label>
-            <select className="form-input" value={form.position} onChange={e => set('position', e.target.value)}>
-              {positions.map(p => <option key={p} value={p}>{p}</option>)}
-            </select>
+            {positions && positions.length > 0 ? (
+              <select
+                className="form-input"
+                value={form.position}
+                onChange={e => set('position', e.target.value)}
+              >
+                {positions.map(p => <option key={p.id} value={p.position}>{p.position}</option>)}
+              </select>
+            ) : (
+              <input
+                className="form-input"
+                value={form.position}
+                onChange={e => set('position', e.target.value)}
+                placeholder="Введите должность"
+              />
+            )}
           </div>
 
-          <div style={{ fontSize: '0.82rem', color: '#888', marginTop: 4 }}>
-            Смену сотрудника можно задать прямо в таблице (значок Д/Н в строке).
-          </div>
+          {!positions || positions.length === 0 ? (
+            <div style={{ fontSize: '0.82rem', color: '#888', marginTop: 4 }}>
+              Нет справочника должностей для этого отдела. Добавьте через Сервис → Управление должностями.
+            </div>
+          ) : null}
 
           {error && (
             <div className="upload-errors" style={{ marginTop: 12 }}>

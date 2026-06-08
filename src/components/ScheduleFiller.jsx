@@ -36,8 +36,14 @@ export default function ScheduleFiller({ employee, year, month, onApply, onClose
 
   function handleApply() {
     const updates = applyPattern(pattern, year, month, { startDate: parsedStart, shift });
-    // For ДНОВ the employee works both shifts — don't update the shift badge
-    onApply(employee.id, updates, isDNOV ? null : shift);
+    // For rolling cycles (2x2/ДНОВ) store the actual start date;
+    // for week-based (5-0/6-1) startDate doesn't matter but we store month start for consistency.
+    const startDateStr = startDate; // already 'YYYY-MM-DD' string
+    onApply(employee.id, updates, {
+      pattern,
+      shift: isDNOV ? null : shift,
+      startDate: startDateStr,
+    });
     onClose();
   }
 

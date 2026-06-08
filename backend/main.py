@@ -1,5 +1,7 @@
+import calendar
 import io
 import os
+from datetime import date, timedelta
 from urllib.parse import quote
 
 from fastapi import FastAPI, Depends, HTTPException, Query
@@ -190,12 +192,222 @@ def get_employee_shifts(
         .all()
     )
 
-    # First non-null shift per employee
     result = {}
     for emp_id, shift in rows:
         if emp_id not in result:
             result[emp_id] = shift
     return result
+
+
+# ── Department-Position reference ─────────────────────────────────────────────
+
+@app.get("/api/positions", response_model=list[schemas.DepartmentPosition])
+def get_positions(department: str = Query(...), db: Session = Depends(get_db)):
+    return (
+        db.query(models.DepartmentPosition)
+        .filter(models.DepartmentPosition.department == department)
+        .order_by(models.DepartmentPosition.position)
+        .all()
+    )
+
+
+@app.post("/api/positions", response_model=schemas.DepartmentPosition)
+def add_position(body: schemas.DepartmentPositionCreate, db: Session = Depends(get_db)):
+    existing = db.query(models.DepartmentPosition).filter_by(
+        department=body.department, position=body.position
+    ).first()
+    if existing:
+        raise HTTPException(status_code=409, detail="Уже существует")
+    obj = models.DepartmentPosition(**body.model_dump())
+    db.add(obj)
+    db.commit()
+    db.refresh(obj)
+    return obj
+
+
+@app.delete("/api/positions/{pos_id}")
+def delete_position(pos_id: int, db: Session = Depends(get_db)):
+    obj = db.get(models.DepartmentPosition, pos_id)
+    if not obj:
+        raise HTTPException(status_code=404, detail="Not found")
+    db.delete(obj)
+    db.commit()
+    return {"ok": True}
+
+
+# ── Schedule patterns ─────────────────────────────────────────────────────────
+
+@app.post("/api/schedule-patterns")
+def save_schedule_pattern(body: schemas.SchedulePatternSave, db: Session = Depends(get_db)):
+    existing = db.query(models.SchedulePattern).filter_by(
+        employee_id=body.employee_id, year=body.year, month=body.month
+    ).first()
+    if existing:
+        existing.pattern    = body.pattern
+        existing.shift      = body.shift
+        existing.start_date = body.start_date
+    else:
+        db.add(models.SchedulePattern(**body.model_dump()))
+    db.commit()
+    return {"ok": True}
+
+
+# ── Copy schedule ─────────────────────────────────────────────────────────────
+
+def _apply_pattern_py(pattern: str, year: int, month: int, shift: str | None, start_date: date) -> dict:
+    """
+    Returns {day: {day_status, night_status}} for every day in the target month.
+    Replicates the JS applyPattern logic so cycles continue seamlessly.
+    """
+    days_in_month = calendar.monthrange(year, month)[1]
+    result = {}
+
+    for d in range(1, days_in_month + 1):
+        current = date(year, month, d)
+        # Python weekday(): 0=Mon…6=Sun  →  JS getDay() equiv: Mon=1…Sun=0
+        # For 5-0/6-1 we need JS-style: Mon-Fri = 1..5, Sat=6, Sun=0
+        dow_py = current.weekday()  # 0=Mon … 6=Sun
+        # convert: Mon=1..Sat=6,Sun=0
+        dow_js = (dow_py + 1) % 7   # Mon→1 … Sun→0   (same as JS getDay for Mon-Sat range)
+
+        diff = (current - start_date).days
+
+        if pattern == 'ДНОВ':
+            if diff < 0:
+                result[d] = {'day_status': '', 'night_status': ''}
+            else:
+                phase = diff % 4
+                if phase == 0:
+                    result[d] = {'day_status': 'Р', 'night_status': ''}
+                elif phase == 1:
+                    result[d] = {'day_status': '', 'night_status': 'Р'}
+                elif phase == 2:
+                    result[d] = {'day_status': 'С', 'night_status': ''}
+                else:
+                    result[d] = {'day_status': 'В', 'night_status': ''}
+        else:
+            if pattern == '5-0':
+                val = 'Р' if 1 <= dow_js <= 5 else 'В'
+            elif pattern == '6-1':
+                val = 'Р' if 1 <= dow_js <= 6 else 'В'
+            elif pattern == '2x2':
+                if diff < 0:
+                    val = ''
+                else:
+                    val = 'Р' if (diff % 4) < 2 else 'В'
+            else:
+                val = ''
+
+            if shift == 'night':
+                result[d] = {'day_status': '', 'night_status': val}
+            else:
+                result[d] = {'day_status': val, 'night_status': ''}
+
+    return result
+
+
+@app.post("/api/copy-schedule")
+def copy_schedule(
+    department:  str = Query(...),
+    from_year:   int = Query(...),
+    from_month:  int = Query(...),
+    to_year:     int = Query(...),
+    to_month:    int = Query(...),
+    db: Session = Depends(get_db),
+):
+    employees = (
+        db.query(models.Employee)
+        .filter(models.Employee.department == department)
+        .all()
+    )
+
+    copied = 0
+    for emp in employees:
+        pattern_rec = (
+            db.query(models.SchedulePattern)
+            .filter_by(employee_id=emp.id, year=from_year, month=from_month)
+            .first()
+        )
+
+        if not pattern_rec:
+            # No pattern stored — fall back to copying entries verbatim
+            src_entries = (
+                db.query(models.ScheduleEntry)
+                .filter_by(employee_id=emp.id, year=from_year, month=from_month)
+                .all()
+            )
+            if not src_entries:
+                continue
+
+            db.query(models.ScheduleEntry).filter_by(
+                employee_id=emp.id, year=to_year, month=to_month
+            ).delete()
+
+            days_in_target = calendar.monthrange(to_year, to_month)[1]
+            src_map = {e.day: e for e in src_entries}
+            emp_shift = next((e.shift for e in src_entries if e.shift), None)
+
+            for d in range(1, days_in_target + 1):
+                src = src_map.get(d)
+                if src:
+                    db.add(models.ScheduleEntry(
+                        employee_id=emp.id,
+                        year=to_year, month=to_month, day=d,
+                        day_status=src.day_status,
+                        night_status=src.night_status,
+                        day_comment='', night_comment='',
+                        shift=src.shift,
+                    ))
+            copied += 1
+            continue
+
+        # Parse stored start_date
+        parts = pattern_rec.start_date.split('-')
+        start_dt = date(int(parts[0]), int(parts[1]), int(parts[2]))
+
+        # Generate new schedule using the SAME start_date — cycle continues naturally
+        day_map = _apply_pattern_py(
+            pattern_rec.pattern, to_year, to_month,
+            pattern_rec.shift, start_dt,
+        )
+
+        # Clear target month entries
+        db.query(models.ScheduleEntry).filter_by(
+            employee_id=emp.id, year=to_year, month=to_month
+        ).delete()
+
+        for d, statuses in day_map.items():
+            if statuses['day_status'] or statuses['night_status']:
+                db.add(models.ScheduleEntry(
+                    employee_id=emp.id,
+                    year=to_year, month=to_month, day=d,
+                    day_status=statuses['day_status'],
+                    night_status=statuses['night_status'],
+                    day_comment='', night_comment='',
+                    shift=pattern_rec.shift,
+                ))
+
+        # Copy (upsert) pattern record to target month
+        dest_pattern = db.query(models.SchedulePattern).filter_by(
+            employee_id=emp.id, year=to_year, month=to_month
+        ).first()
+        if dest_pattern:
+            dest_pattern.pattern    = pattern_rec.pattern
+            dest_pattern.shift      = pattern_rec.shift
+            dest_pattern.start_date = pattern_rec.start_date
+        else:
+            db.add(models.SchedulePattern(
+                employee_id=emp.id,
+                year=to_year, month=to_month,
+                pattern=pattern_rec.pattern,
+                shift=pattern_rec.shift,
+                start_date=pattern_rec.start_date,
+            ))
+
+        copied += 1
+
+    db.commit()
+    return {"copied": copied}
 
 
 # ── Export ────────────────────────────────────────────────────────────────────
