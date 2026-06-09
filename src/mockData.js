@@ -39,6 +39,7 @@ export const SHIFT_COLORS = {
   'О': '#cce5ff',  // синий — отпуск
   'Б': '#f8d7da',  // красный — больничный
   'С': '#e8d5f5',  // фиолетовый — отсыпной
+  'ДО': '#fde8c8', // оранжевый — отпуск за свой счёт
 };
 
 export const DAY_EMPTY_COLOR   = '#ebebeb';
