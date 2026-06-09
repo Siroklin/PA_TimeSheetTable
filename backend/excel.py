@@ -4,14 +4,26 @@ from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
 SHIFT_COLORS = {
-    'Р': 'D4EDDA',
-    'В': 'FFF3CD',
-    'О': 'CCE5FF',
-    'Б': 'F8D7DA',
-    'С': 'E8D5F5',
+    'Р':  'D4EDDA',
+    'В':  'FFF3CD',
+    'О':  'CCE5FF',
+    'Б':  'F8D7DA',
+    'С':  'E8D5F5',
+    'ДО': 'FDE8C8',
 }
 DAY_EMPTY = 'EBEBEB'
 NIGHT_EMPTY = 'C8C8C8'
+
+LEGEND = [
+    ('Р',   'D4EDDA', 'Работает'),
+    ('В',   'FFF3CD', 'Выходной'),
+    ('О',   'CCE5FF', 'Отпуск'),
+    ('Б',   'F8D7DA', 'Больничный'),
+    ('С',   'E8D5F5', 'Отсыпной'),
+    ('ДО',  'FDE8C8', 'Отпуск за свой счёт'),
+    ('Д',   'EBEBEB', 'Дневная смена — не заполнено'),
+    ('Н',   'C8C8C8', 'Ночная смена — не заполнено'),
+]
 
 MONTH_NAMES = [
     'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
@@ -104,5 +116,20 @@ def generate_excel(employees, schedule_map: dict, year: int, month: int, departm
         for col in range(1, total_cols + 1):
             ws.cell(row=row, column=col).border = _BORDER
         ws.row_dimensions[row].height = 18
+
+    # Legend
+    legend_start = 3 + len(employees) + 2
+    ws.cell(row=legend_start, column=1, value='Легенда:').font = Font(bold=True, size=9)
+    ws.row_dimensions[legend_start].height = 14
+
+    for offset, (letter, color, description) in enumerate(LEGEND, start=1):
+        r = legend_start + offset
+        cell = ws.cell(row=r, column=1, value=letter)
+        cell.fill = _fill(color)
+        cell.font = Font(bold=True, size=9)
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+        cell.border = _BORDER
+        ws.cell(row=r, column=2, value=description).font = Font(size=9)
+        ws.row_dimensions[r].height = 16
 
     return wb
