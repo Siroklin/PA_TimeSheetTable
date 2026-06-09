@@ -181,7 +181,7 @@ export default function App() {
     <div className="app">
       <header className="app-header">
         <div className="header-main">
-          <h1>График работы сотрудников</h1>
+          <h1>График работы сотрудников <small style={{fontSize:'0.5em',opacity:0.5}}>v2</small></h1>
         </div>
         <a className="btn-export" href={exportUrl} download>
           Скачать Excel
