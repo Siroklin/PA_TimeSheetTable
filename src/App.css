@@ -33,6 +33,11 @@ body {
   gap: 28px;
 }
 
+.login-logo {
+  width: 220px;
+  height: auto;
+}
+
 .login-title {
   font-size: 5rem;
   font-weight: 700;

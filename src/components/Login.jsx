@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { login, setToken } from '../api';
+import proAquaLogo from '../assets/proaqua-logo.svg';
 
 export default function Login({ onLogin }) {
   const [stage, setStage]       = useState('splash');
@@ -27,6 +28,7 @@ export default function Login({ onLogin }) {
   return (
     <div className="login-screen">
       <div className="login-center">
+        <img src={proAquaLogo} alt="PRO AQUA" className="login-logo" />
         <h1 className="login-title">График работы</h1>
 
         {stage === 'splash' && (
