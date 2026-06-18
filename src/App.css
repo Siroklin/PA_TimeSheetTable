@@ -34,30 +34,41 @@ body {
 }
 
 .login-title {
-  font-size: 2.6rem;
+  font-size: 5rem;
   font-weight: 700;
   color: #1a3c5e;
   letter-spacing: 0.5px;
   text-align: center;
 }
 
-.login-enter-btn {
-  padding: 10px 36px;
-  font-size: 1rem;
+.login-center .btn-save.login-enter-btn {
+  padding: 18px 56px;
+  font-size: 1.6rem;
+  border-radius: 10px;
 }
 
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  width: 280px;
+  gap: 16px;
+  width: 360px;
+}
+
+.login-form .form-input {
+  padding: 14px 16px;
+  font-size: 1.15rem;
+}
+
+.login-form .btn-save {
+  padding: 14px 20px;
+  font-size: 1.15rem;
 }
 
 .login-version {
   position: fixed;
   right: 18px;
   bottom: 14px;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   color: #99a3ad;
 }
 
