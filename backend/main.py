@@ -9,7 +9,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import inspect, text
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from .database import SessionLocal, engine, Base
@@ -215,23 +214,28 @@ def create_department(
 @app.delete("/api/departments/{name}")
 def delete_department(
     name: str, db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_admin),
 ):
     obj = db.get(models.Department, name)
     if not obj:
         raise HTTPException(status_code=404, detail="Not found")
-    in_use = (
-        db.query(models.Employee).filter_by(department=name).first()
-        or db.query(models.DepartmentPosition).filter_by(department=name).first()
-    )
-    if in_use:
-        raise HTTPException(status_code=400, detail="Нельзя удалить — отдел используется сотрудниками или должностями")
+
+    emp_ids = [
+        e.id for e in db.query(models.Employee.id).filter_by(department=name).all()
+    ]
+    if emp_ids:
+        db.query(models.ScheduleEntry).filter(models.ScheduleEntry.employee_id.in_(emp_ids)).delete(
+            synchronize_session=False
+        )
+        db.query(models.SchedulePattern).filter(models.SchedulePattern.employee_id.in_(emp_ids)).delete(
+            synchronize_session=False
+        )
+        db.query(models.Employee).filter_by(department=name).delete(synchronize_session=False)
+
+    db.query(models.DepartmentPosition).filter_by(department=name).delete(synchronize_session=False)
+    db.query(models.UserDepartment).filter_by(department=name).delete(synchronize_session=False)
     db.delete(obj)
-    try:
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status_code=400, detail="Нельзя удалить — отдел используется сотрудниками или должностями")
+    db.commit()
     return {"ok": True}
 
 

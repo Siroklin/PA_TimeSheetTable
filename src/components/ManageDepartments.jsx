@@ -22,13 +22,13 @@ export default function ManageDepartments({ departments, onSuccess, onClose }) {
   }
 
   async function handleDelete(name) {
-    if (!confirm(`Удалить отдел "${name}"?`)) return;
+    if (!confirm(`Вы точно хотите удалить отдел "${name}"? Все данные по отделу будут удалены.`)) return;
     setError(null);
     try {
       await deleteDepartment(name);
       onSuccess();
     } catch (e) {
-      setError(e.message.includes('400') ? 'Нельзя удалить — отдел используется сотрудниками или должностями.' : 'Ошибка при удалении.');
+      setError(e.message.includes('403') ? 'Удалить отдел может только администратор.' : 'Ошибка при удалении.');
     }
   }
 
