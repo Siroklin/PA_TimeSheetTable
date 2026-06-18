@@ -89,6 +89,12 @@ def require_admin(user: models.User = Depends(get_current_user)) -> models.User:
     return user
 
 
+def require_can_edit(user: models.User = Depends(get_current_user)) -> models.User:
+    if not user.is_admin and user.role == "view":
+        raise HTTPException(status_code=403, detail="Доступ только для просмотра")
+    return user
+
+
 def check_department_access(user: models.User, department: str, db: Session) -> None:
     if user.is_admin:
         return

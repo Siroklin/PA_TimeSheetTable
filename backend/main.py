@@ -8,6 +8,7 @@ from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import inspect, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -17,11 +18,26 @@ from . import schemas
 from .excel import generate_excel
 from .auth import (
     hash_password, verify_password, create_token,
-    get_current_user, require_admin,
+    get_current_user, require_admin, require_can_edit,
     check_department_access, check_employee_access,
 )
 
 Base.metadata.create_all(bind=engine)
+
+
+def _migrate_add_user_role_column():
+    """create_all() doesn't alter pre-existing tables — add the 'role'
+    column to users if upgrading from a version without it."""
+    inspector = inspect(engine)
+    columns = {c["name"] for c in inspector.get_columns("users")}
+    if "role" not in columns:
+        with engine.begin() as conn:
+            conn.execute(text(
+                "ALTER TABLE users ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'edit'"
+            ))
+
+
+_migrate_add_user_role_column()
 
 LEGACY_DEPARTMENTS = ["Цех №1", "Цех №2", "Цех №3", "Склад", "ПроИнокс"]
 
@@ -86,7 +102,7 @@ def _user_out(db: Session, u: models.User) -> schemas.User:
     ]
     return schemas.User(
         id=u.id, name=u.name, email=u.email, login=u.login,
-        is_admin=u.is_admin, departments=depts,
+        is_admin=u.is_admin, role=u.role, departments=depts,
     )
 
 
@@ -120,6 +136,7 @@ def create_user(body: schemas.UserCreate, _: models.User = Depends(require_admin
     u = models.User(
         name=body.name, email=body.email, login=body.login,
         password_hash=hash_password(body.password), is_admin=body.is_admin,
+        role=body.role,
     )
     db.add(u)
     db.commit()
@@ -148,6 +165,8 @@ def update_user(
         u.email = body.email
     if body.is_admin is not None:
         u.is_admin = body.is_admin
+    if body.role is not None:
+        u.role = body.role
     if body.password:
         u.password_hash = hash_password(body.password)
     if body.departments is not None:
@@ -234,7 +253,7 @@ def get_employees(
 @app.post("/api/employees", response_model=schemas.Employee)
 def create_employee(
     emp: schemas.EmployeeCreate, db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_can_edit),
 ):
     check_department_access(current_user, emp.department, db)
     db_emp = models.Employee(**emp.model_dump())
@@ -247,7 +266,7 @@ def create_employee(
 @app.post("/api/employees/bulk")
 def bulk_employees(
     employees: list[schemas.EmployeeCreate], db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_can_edit),
 ):
     for emp in employees:
         check_department_access(current_user, emp.department, db)
@@ -266,7 +285,7 @@ def bulk_employees(
 @app.delete("/api/employees/{emp_id}")
 def delete_employee(
     emp_id: int, db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_can_edit),
 ):
     check_employee_access(current_user, emp_id, db)
     emp = db.get(models.Employee, emp_id)
@@ -321,7 +340,7 @@ def update_cell(
     day: int,
     cell: schemas.CellUpdate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_can_edit),
 ):
     check_employee_access(current_user, emp_id, db)
     entry = (
@@ -358,7 +377,7 @@ def clear_schedule(
     year: int,
     month: int,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_can_edit),
 ):
     check_employee_access(current_user, emp_id, db)
     db.query(models.ScheduleEntry).filter_by(
@@ -422,7 +441,7 @@ def get_positions(
 @app.post("/api/positions", response_model=schemas.DepartmentPosition)
 def add_position(
     body: schemas.DepartmentPositionCreate, db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_can_edit),
 ):
     check_department_access(current_user, body.department, db)
     existing = db.query(models.DepartmentPosition).filter_by(
@@ -440,7 +459,7 @@ def add_position(
 @app.delete("/api/positions/{pos_id}")
 def delete_position(
     pos_id: int, db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_can_edit),
 ):
     obj = db.get(models.DepartmentPosition, pos_id)
     if not obj:
@@ -456,7 +475,7 @@ def delete_position(
 @app.post("/api/schedule-patterns")
 def save_schedule_pattern(
     body: schemas.SchedulePatternSave, db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_can_edit),
 ):
     check_employee_access(current_user, body.employee_id, db)
     existing = db.query(models.SchedulePattern).filter_by(
@@ -534,7 +553,7 @@ def copy_schedule(
     to_year:     int = Query(...),
     to_month:    int = Query(...),
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_can_edit),
 ):
     check_department_access(current_user, department, db)
     employees = (

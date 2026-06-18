@@ -69,6 +69,7 @@ export default function App() {
   const { year, month } = period;
 
   const visibleDepartments = user?.is_admin ? departments : (user?.departments ?? []);
+  const canEdit = !!user && (user.is_admin || user.role !== 'view');
 
   const loadDepartments = useCallback(async () => {
     try {
@@ -247,6 +248,7 @@ export default function App() {
         positions={positions}
         departments={visibleDepartments}
         isAdmin={user.is_admin}
+        canEdit={canEdit}
         onFilterChange={patch => setFilters(prev => ({ ...prev, ...patch }))}
         onPeriodChange={setPeriod}
         onAddEmployee={() => setShowAddEmployee(true)}
@@ -270,6 +272,7 @@ export default function App() {
             shifts={shiftsMap}
             year={year}
             month={month}
+            readOnly={!canEdit}
             onCellClick={handleCellClick}
             onFillClick={setFillingEmp}
             onDeleteEmployee={handleDeleteEmployee}

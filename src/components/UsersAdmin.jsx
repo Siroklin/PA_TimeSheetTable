@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchUsers, createUser, updateUser, deleteUser } from '../api';
 
-const EMPTY_FORM = { name: '', email: '', login: '', password: '', is_admin: false, departments: [] };
+const EMPTY_FORM = { name: '', email: '', login: '', password: '', is_admin: false, role: 'edit', departments: [] };
 
 export default function UsersAdmin({ departments, currentUserId, onClose }) {
   const [users, setUsers]     = useState([]);
@@ -22,7 +22,7 @@ export default function UsersAdmin({ departments, currentUserId, onClose }) {
 
   function startEdit(u) {
     setEditingId(u.id);
-    setForm({ name: u.name, email: u.email, login: u.login, password: '', is_admin: u.is_admin, departments: u.departments });
+    setForm({ name: u.name, email: u.email, login: u.login, password: '', is_admin: u.is_admin, role: u.role, departments: u.departments });
     setError(null);
   }
 
@@ -56,12 +56,12 @@ export default function UsersAdmin({ departments, currentUserId, onClose }) {
       if (editingId === 'new') {
         await createUser({
           name: form.name.trim(), email: form.email.trim(), login: form.login.trim(),
-          password: form.password, is_admin: form.is_admin, departments: form.departments,
+          password: form.password, is_admin: form.is_admin, role: form.role, departments: form.departments,
         });
       } else {
         const patch = {
           name: form.name.trim(), email: form.email.trim(), login: form.login.trim(),
-          is_admin: form.is_admin, departments: form.departments,
+          is_admin: form.is_admin, role: form.role, departments: form.departments,
         };
         if (form.password) patch.password = form.password;
         await updateUser(editingId, patch);
@@ -102,7 +102,9 @@ export default function UsersAdmin({ departments, currentUserId, onClose }) {
                 {users.map(u => (
                   <div key={u.id} className="pos-list-item">
                     <span>
-                      {u.login} — {u.name} {u.is_admin ? '(админ)' : `(${u.departments.join(', ') || 'без отделов'})`}
+                      {u.login} — {u.name} {u.is_admin
+                        ? '(админ)'
+                        : `(${u.role === 'view' ? 'просмотр' : 'редактирование'}: ${u.departments.join(', ') || 'без отделов'})`}
                     </span>
                     <span>
                       <button className="btn-delete-pos" onClick={() => startEdit(u)} title="Редактировать">✎</button>
@@ -138,6 +140,18 @@ export default function UsersAdmin({ departments, currentUserId, onClose }) {
                   <input type="checkbox" checked={form.is_admin} onChange={e => setForm(f => ({ ...f, is_admin: e.target.checked }))} />
                   {' '}Администратор
                 </label>
+              </div>
+              <div className="form-group">
+                <label>Роль</label>
+                <select
+                  className="form-input"
+                  value={form.role}
+                  onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
+                  disabled={form.is_admin}
+                >
+                  <option value="edit">Редактирование</option>
+                  <option value="view">Просмотр</option>
+                </select>
               </div>
               <div className="form-group">
                 <label>Доступные отделы</label>

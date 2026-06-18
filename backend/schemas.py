@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Literal, Optional
 
 
 class DepartmentCreate(BaseModel):
@@ -21,6 +21,7 @@ class UserBase(BaseModel):
     email: str = ""
     login: str
     is_admin: bool = False
+    role: Literal["edit", "view"] = "edit"
 
 
 class UserCreate(UserBase):
@@ -34,6 +35,7 @@ class UserUpdate(BaseModel):
     login: Optional[str] = None
     password: Optional[str] = None
     is_admin: Optional[bool] = None
+    role: Optional[Literal["edit", "view"]] = None
     departments: Optional[list[str]] = None
 
 

@@ -12,7 +12,7 @@ function isWeekend(year, month, day) {
 }
 
 export default function ScheduleTable({
-  employees, schedule, shifts = {}, year, month,
+  employees, schedule, shifts = {}, year, month, readOnly = false,
   onCellClick, onFillClick, onDeleteEmployee,
 }) {
   const daysInMonth = new Date(year, month, 0).getDate();
@@ -55,20 +55,24 @@ export default function ScheduleTable({
                       >
                         {empShift === 'night' ? 'Н' : 'Д'}
                       </span>
-                      <button
-                        className="btn-fill-schedule"
-                        title="Внести график"
-                        onClick={() => onFillClick(emp)}
-                      >
-                        Граф.
-                      </button>
-                      <button
-                        className="btn-delete-emp"
-                        title="Удалить сотрудника"
-                        onClick={() => onDeleteEmployee(emp.id)}
-                      >
-                        ×
-                      </button>
+                      {!readOnly && (
+                        <button
+                          className="btn-fill-schedule"
+                          title="Внести график"
+                          onClick={() => onFillClick(emp)}
+                        >
+                          Граф.
+                        </button>
+                      )}
+                      {!readOnly && (
+                        <button
+                          className="btn-delete-emp"
+                          title="Удалить сотрудника"
+                          onClick={() => onDeleteEmployee(emp.id)}
+                        >
+                          ×
+                        </button>
+                      )}
                     </div>
                   </div>
                 </td>
@@ -82,8 +86,8 @@ export default function ScheduleTable({
                       dayComment={cell.dayComment ?? ''}
                       nightComment={cell.nightComment ?? ''}
                       isWeekend={isWeekend(year, month, d)}
-                      onDayClick={() => onCellClick(emp, d, 'day')}
-                      onNightClick={() => onCellClick(emp, d, 'night')}
+                      onDayClick={readOnly ? undefined : () => onCellClick(emp, d, 'day')}
+                      onNightClick={readOnly ? undefined : () => onCellClick(emp, d, 'night')}
                     />
                   );
                 })}

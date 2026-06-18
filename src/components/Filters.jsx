@@ -11,7 +11,7 @@ function getYears() {
 }
 
 export default function Filters({
-  filters, period, positions, departments, isAdmin,
+  filters, period, positions, departments, isAdmin, canEdit,
   onFilterChange, onPeriodChange,
   onAddEmployee, onUploadClick, onManagePositions, onManageDepartments, onManageUsers,
   onCopySchedule, onLogout,
@@ -100,15 +100,15 @@ export default function Filters({
         </button>
         {menuOpen && (
           <div className="service-dropdown">
-            <button onClick={() => menuAction(onAddEmployee)}>Добавить сотрудника</button>
-            <button onClick={() => menuAction(onUploadClick)}>Загрузить сотрудников</button>
-            <div className="service-separator" />
-            <button onClick={() => menuAction(onManagePositions)}>Управление должностями</button>
+            {canEdit && <button onClick={() => menuAction(onAddEmployee)}>Добавить сотрудника</button>}
+            {canEdit && <button onClick={() => menuAction(onUploadClick)}>Загрузить сотрудников</button>}
+            {canEdit && <div className="service-separator" />}
+            {canEdit && <button onClick={() => menuAction(onManagePositions)}>Управление должностями</button>}
             {isAdmin && <button onClick={() => menuAction(onManageDepartments)}>Управление отделами</button>}
             {isAdmin && <button onClick={() => menuAction(onManageUsers)}>Управление пользователями</button>}
             <div className="service-separator" />
-            <button onClick={() => menuAction(onCopySchedule)}>Копировать расписание</button>
-            <div className="service-separator" />
+            {canEdit && <button onClick={() => menuAction(onCopySchedule)}>Копировать расписание</button>}
+            {canEdit && <div className="service-separator" />}
             <button onClick={() => menuAction(onLogout)}>Выйти</button>
           </div>
         )}
