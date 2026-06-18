@@ -8,6 +8,7 @@ from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from .database import SessionLocal, engine, Base
@@ -16,6 +17,27 @@ from . import schemas
 from .excel import generate_excel
 
 Base.metadata.create_all(bind=engine)
+
+LEGACY_DEPARTMENTS = ["Цех №1", "Цех №2", "Цех №3", "Склад", "ПроИнокс"]
+
+
+def _seed_departments():
+    """First-run seed: populate the departments table from existing employee
+    data plus the legacy hardcoded list, so existing rows keep a valid FK."""
+    db = SessionLocal()
+    try:
+        if db.query(models.Department).first():
+            return
+        names = {d for (d,) in db.query(models.Employee.department).distinct()}
+        names.update(LEGACY_DEPARTMENTS)
+        for name in sorted(names):
+            db.add(models.Department(name=name))
+        db.commit()
+    finally:
+        db.close()
+
+
+_seed_departments()
 
 app = FastAPI()
 
@@ -33,6 +55,45 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+# ── Departments ───────────────────────────────────────────────────────────────
+
+@app.get("/api/departments", response_model=list[schemas.Department])
+def get_departments(db: Session = Depends(get_db)):
+    return db.query(models.Department).order_by(models.Department.name).all()
+
+
+@app.post("/api/departments", response_model=schemas.Department)
+def create_department(body: schemas.DepartmentCreate, db: Session = Depends(get_db)):
+    existing = db.get(models.Department, body.name)
+    if existing:
+        raise HTTPException(status_code=409, detail="Уже существует")
+    obj = models.Department(name=body.name)
+    db.add(obj)
+    db.commit()
+    db.refresh(obj)
+    return obj
+
+
+@app.delete("/api/departments/{name}")
+def delete_department(name: str, db: Session = Depends(get_db)):
+    obj = db.get(models.Department, name)
+    if not obj:
+        raise HTTPException(status_code=404, detail="Not found")
+    in_use = (
+        db.query(models.Employee).filter_by(department=name).first()
+        or db.query(models.DepartmentPosition).filter_by(department=name).first()
+    )
+    if in_use:
+        raise HTTPException(status_code=400, detail="Нельзя удалить — отдел используется сотрудниками или должностями")
+    db.delete(obj)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Нельзя удалить — отдел используется сотрудниками или должностями")
+    return {"ok": True}
 
 
 # ── Employees ─────────────────────────────────────────────────────────────────

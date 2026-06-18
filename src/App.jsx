@@ -6,11 +6,12 @@ import ScheduleFiller from './components/ScheduleFiller';
 import EmployeeUpload from './components/EmployeeUpload';
 import AddEmployee from './components/AddEmployee';
 import AddPosition from './components/AddPosition';
+import ManageDepartments from './components/ManageDepartments';
 import CopySchedule from './components/CopySchedule';
 import {
   fetchEmployees, fetchSchedule, updateCell, getExportUrl,
   fetchEmployeeShifts, clearSchedule, deleteEmployee,
-  fetchPositions, savePattern,
+  fetchPositions, savePattern, fetchDepartments,
 } from './api';
 import './App.css';
 
@@ -23,11 +24,12 @@ export default function App() {
   });
 
   const [filters, setFilters] = useState({
-    department: 'Цех №1',
+    department: '',
     position:   'all',
     shift:      'all',
   });
 
+  const [departments, setDepartments] = useState([]);
   const [employees, setEmployees]     = useState([]);
   const [scheduleMap, setScheduleMap] = useState({});
   const [shiftsMap, setShiftsMap]     = useState({});
@@ -40,9 +42,27 @@ export default function App() {
   const [showUpload, setShowUpload]               = useState(false);
   const [showAddEmployee, setShowAddEmployee]     = useState(false);
   const [showAddPosition, setShowAddPosition]     = useState(false);
+  const [showManageDepartments, setShowManageDepartments] = useState(false);
   const [showCopySchedule, setShowCopySchedule]   = useState(false);
 
   const { year, month } = period;
+
+  const loadDepartments = useCallback(async () => {
+    try {
+      const list = await fetchDepartments();
+      const names = list.map(d => d.name);
+      setDepartments(names);
+      setFilters(prev => (
+        prev.department && names.includes(prev.department)
+          ? prev
+          : { ...prev, department: names[0] ?? '' }
+      ));
+    } catch {
+      setDepartments([]);
+    }
+  }, []);
+
+  useEffect(() => { loadDepartments(); }, [loadDepartments]);
 
   const loadPositions = useCallback(async (dept) => {
     try {
@@ -54,6 +74,7 @@ export default function App() {
   }, []);
 
   const loadData = useCallback(async () => {
+    if (!filters.department) return;
     setLoading(true);
     setError(null);
     try {
@@ -74,7 +95,9 @@ export default function App() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  useEffect(() => { loadPositions(filters.department); }, [filters.department, loadPositions]);
+  useEffect(() => {
+    if (filters.department) loadPositions(filters.department);
+  }, [filters.department, loadPositions]);
 
   // Filter rows: by position, then by shift
   const visibleEmployees = useMemo(() => {
@@ -192,11 +215,13 @@ export default function App() {
         filters={filters}
         period={period}
         positions={positions}
+        departments={departments}
         onFilterChange={patch => setFilters(prev => ({ ...prev, ...patch }))}
         onPeriodChange={setPeriod}
         onAddEmployee={() => setShowAddEmployee(true)}
         onUploadClick={() => setShowUpload(true)}
         onManagePositions={() => setShowAddPosition(true)}
+        onManageDepartments={() => setShowManageDepartments(true)}
         onCopySchedule={() => setShowCopySchedule(true)}
       />
 
@@ -239,7 +264,7 @@ export default function App() {
         />
       )}
       {showUpload && (
-        <EmployeeUpload onSuccess={loadData} onClose={() => setShowUpload(false)} />
+        <EmployeeUpload departments={departments} onSuccess={loadData} onClose={() => setShowUpload(false)} />
       )}
       {showAddEmployee && (
         <AddEmployee
@@ -252,9 +277,17 @@ export default function App() {
       {showAddPosition && (
         <AddPosition
           department={filters.department}
+          departments={departments}
           positions={positions}
           onSuccess={dept => loadPositions(dept || filters.department)}
           onClose={() => setShowAddPosition(false)}
+        />
+      )}
+      {showManageDepartments && (
+        <ManageDepartments
+          departments={departments}
+          onSuccess={loadDepartments}
+          onClose={() => setShowManageDepartments(false)}
         />
       )}
       {showCopySchedule && (

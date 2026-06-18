@@ -51,6 +51,24 @@ export function getExportUrl(department, year, month) {
   return `/api/export/excel?department=${encodeURIComponent(department)}&year=${year}&month=${month}`;
 }
 
+// ── Departments reference ──────────────────────────────────────────────────────
+
+export function fetchDepartments() {
+  return apiFetch('/api/departments');
+}
+
+export function addDepartment(name) {
+  return apiFetch('/api/departments', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function deleteDepartment(name) {
+  return apiFetch(`/api/departments/${encodeURIComponent(name)}`, { method: 'DELETE' });
+}
+
 // ── Department-Position reference ─────────────────────────────────────────────
 
 export function fetchPositions(department) {

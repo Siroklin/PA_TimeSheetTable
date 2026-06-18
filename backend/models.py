@@ -1,5 +1,11 @@
-from sqlalchemy import Column, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Column, ForeignKey, Integer, String, Text, UniqueConstraint
 from .database import Base
+
+
+class Department(Base):
+    __tablename__ = "departments"
+
+    name = Column(String(100), primary_key=True)
 
 
 class Employee(Base):
@@ -9,14 +15,14 @@ class Employee(Base):
     code       = Column(String(20),  nullable=False)
     name       = Column(String(200), nullable=False)
     position   = Column(String(100), nullable=False)
-    department = Column(String(100), nullable=False, index=True)
+    department = Column(String(100), ForeignKey("departments.name", ondelete="RESTRICT"), nullable=False, index=True)
 
 
 class DepartmentPosition(Base):
     __tablename__ = "department_positions"
 
     id         = Column(Integer, primary_key=True)
-    department = Column(String(100), nullable=False, index=True)
+    department = Column(String(100), ForeignKey("departments.name", ondelete="RESTRICT"), nullable=False, index=True)
     position   = Column(String(100), nullable=False)
 
     __table_args__ = (UniqueConstraint("department", "position"),)

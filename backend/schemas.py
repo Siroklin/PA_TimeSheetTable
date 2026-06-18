@@ -2,6 +2,15 @@ from pydantic import BaseModel
 from typing import Optional
 
 
+class DepartmentCreate(BaseModel):
+    name: str
+
+
+class Department(DepartmentCreate):
+    class Config:
+        from_attributes = True
+
+
 class EmployeeCreate(BaseModel):
     code: str
     name: str

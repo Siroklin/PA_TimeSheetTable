@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { departments } from '../mockData';
 import { uploadEmployees } from '../api';
 
 const EXAMPLE = `001,Цех №1,Иванов Иван Иванович,Оператор
 002,Склад,Петрова Мария Сергеевна,Кладовщик
 003,ПроИнокс,Козлов Андрей Павлович,Технолог`;
 
-function parseCsv(text) {
+function parseCsv(text, departments) {
   const errors = [];
   const rows = [];
 
@@ -27,7 +26,7 @@ function parseCsv(text) {
   return { rows, errors };
 }
 
-export default function EmployeeUpload({ onSuccess, onClose }) {
+export default function EmployeeUpload({ departments, onSuccess, onClose }) {
   const [text, setText]       = useState('');
   const [parsed, setParsed]   = useState(null);
   const [errors, setErrors]   = useState([]);
@@ -35,7 +34,7 @@ export default function EmployeeUpload({ onSuccess, onClose }) {
   const [saveErr, setSaveErr] = useState(null);
 
   function handleParse() {
-    const { rows, errors } = parseCsv(text);
+    const { rows, errors } = parseCsv(text, departments || []);
     setParsed(rows);
     setErrors(errors);
   }

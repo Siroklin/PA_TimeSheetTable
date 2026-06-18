@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from 'react';
-import { departments } from '../mockData';
 
 const MONTHS = [
   'Январь','Февраль','Март','Апрель','Май','Июнь',
@@ -12,9 +11,9 @@ function getYears() {
 }
 
 export default function Filters({
-  filters, period, positions,
+  filters, period, positions, departments,
   onFilterChange, onPeriodChange,
-  onAddEmployee, onUploadClick, onManagePositions, onCopySchedule,
+  onAddEmployee, onUploadClick, onManagePositions, onManageDepartments, onCopySchedule,
 }) {
   const { department, position, shift } = filters;
   const { year, month } = period;
@@ -72,7 +71,7 @@ export default function Filters({
       <div className="filter-group">
         <label>Отдел</label>
         <select value={department} onChange={e => onFilterChange({ department: e.target.value, position: 'all' })}>
-          {departments.map(d => <option key={d} value={d}>{d}</option>)}
+          {(departments || []).map(d => <option key={d} value={d}>{d}</option>)}
         </select>
       </div>
 
@@ -104,6 +103,7 @@ export default function Filters({
             <button onClick={() => menuAction(onUploadClick)}>Загрузить сотрудников</button>
             <div className="service-separator" />
             <button onClick={() => menuAction(onManagePositions)}>Управление должностями</button>
+            <button onClick={() => menuAction(onManageDepartments)}>Управление отделами</button>
             <div className="service-separator" />
             <button onClick={() => menuAction(onCopySchedule)}>Копировать расписание</button>
           </div>

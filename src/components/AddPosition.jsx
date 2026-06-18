@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { departments } from '../mockData';
 import { addPosition, deletePosition } from '../api';
 
-export default function AddPosition({ department, positions, onSuccess, onClose }) {
+export default function AddPosition({ department, departments, positions, onSuccess, onClose }) {
   const [selDept, setSelDept] = useState(department);
   const [newPos, setNewPos]   = useState('');
   const [saving, setSaving]   = useState(false);
@@ -49,7 +48,7 @@ export default function AddPosition({ department, positions, onSuccess, onClose 
               value={selDept}
               onChange={e => { setSelDept(e.target.value); onSuccess(e.target.value); }}
             >
-              {departments.map(d => <option key={d} value={d}>{d}</option>)}
+              {(departments || []).map(d => <option key={d} value={d}>{d}</option>)}
             </select>
           </div>
 
