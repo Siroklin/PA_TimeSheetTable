@@ -1,10 +1,67 @@
-async function apiFetch(url, options) {
-  const res = await fetch(url, options);
+const TOKEN_KEY = 'st_token';
+
+export function getToken() {
+  return sessionStorage.getItem(TOKEN_KEY);
+}
+
+export function setToken(token) {
+  sessionStorage.setItem(TOKEN_KEY, token);
+}
+
+export function clearToken() {
+  sessionStorage.removeItem(TOKEN_KEY);
+}
+
+async function apiFetch(url, options = {}) {
+  const token = getToken();
+  const headers = { ...(options.headers || {}) };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch(url, { ...options, headers });
   if (!res.ok) {
     const text = await res.text().catch(() => '');
     throw new Error(`${res.status} ${text}`);
   }
   return res.json();
+}
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+
+export function login(loginName, password) {
+  return apiFetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ login: loginName, password }),
+  });
+}
+
+export function fetchMe() {
+  return apiFetch('/api/auth/me');
+}
+
+// ── Users (admin) ────────────────────────────────────────────────────────────
+
+export function fetchUsers() {
+  return apiFetch('/api/users');
+}
+
+export function createUser(data) {
+  return apiFetch('/api/users', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+export function updateUser(id, data) {
+  return apiFetch(`/api/users/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+export function deleteUser(id) {
+  return apiFetch(`/api/users/${id}`, { method: 'DELETE' });
 }
 
 export function fetchEmployees(department) {
@@ -48,7 +105,9 @@ export function uploadEmployees(employees) {
 }
 
 export function getExportUrl(department, year, month) {
-  return `/api/export/excel?department=${encodeURIComponent(department)}&year=${year}&month=${month}`;
+  const token = getToken();
+  return `/api/export/excel?department=${encodeURIComponent(department)}&year=${year}&month=${month}` +
+    (token ? `&token=${encodeURIComponent(token)}` : '');
 }
 
 // ── Departments reference ──────────────────────────────────────────────────────

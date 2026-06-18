@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Text, UniqueConstraint
 from .database import Base
 
 
@@ -6,6 +6,24 @@ class Department(Base):
     __tablename__ = "departments"
 
     name = Column(String(100), primary_key=True)
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id            = Column(Integer, primary_key=True)
+    name          = Column(String(200), nullable=False)
+    email         = Column(String(200), nullable=False, default="")
+    login         = Column(String(100), nullable=False, unique=True, index=True)
+    password_hash = Column(String(200), nullable=False)
+    is_admin      = Column(Boolean, nullable=False, default=False)
+
+
+class UserDepartment(Base):
+    __tablename__ = "user_departments"
+
+    user_id    = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    department = Column(String(100), ForeignKey("departments.name", ondelete="CASCADE"), primary_key=True)
 
 
 class Employee(Base):

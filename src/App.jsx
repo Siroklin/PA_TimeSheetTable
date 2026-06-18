@@ -7,16 +7,36 @@ import EmployeeUpload from './components/EmployeeUpload';
 import AddEmployee from './components/AddEmployee';
 import AddPosition from './components/AddPosition';
 import ManageDepartments from './components/ManageDepartments';
+import UsersAdmin from './components/UsersAdmin';
 import CopySchedule from './components/CopySchedule';
+import Login from './components/Login';
 import {
   fetchEmployees, fetchSchedule, updateCell, getExportUrl,
   fetchEmployeeShifts, clearSchedule, deleteEmployee,
   fetchPositions, savePattern, fetchDepartments,
+  fetchMe, getToken, clearToken,
 } from './api';
 import './App.css';
 
 export default function App() {
   const now = new Date();
+
+  const [authChecked, setAuthChecked] = useState(false);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const token = getToken();
+    if (!token) { setAuthChecked(true); return; }
+    fetchMe()
+      .then(setUser)
+      .catch(() => clearToken())
+      .finally(() => setAuthChecked(true));
+  }, []);
+
+  function handleLogout() {
+    clearToken();
+    setUser(null);
+  }
 
   const [period, setPeriod] = useState({
     year:  now.getFullYear(),
@@ -43,26 +63,33 @@ export default function App() {
   const [showAddEmployee, setShowAddEmployee]     = useState(false);
   const [showAddPosition, setShowAddPosition]     = useState(false);
   const [showManageDepartments, setShowManageDepartments] = useState(false);
+  const [showManageUsers, setShowManageUsers]     = useState(false);
   const [showCopySchedule, setShowCopySchedule]   = useState(false);
 
   const { year, month } = period;
 
+  const visibleDepartments = user?.is_admin ? departments : (user?.departments ?? []);
+
   const loadDepartments = useCallback(async () => {
     try {
       const list = await fetchDepartments();
-      const names = list.map(d => d.name);
-      setDepartments(names);
-      setFilters(prev => (
-        prev.department && names.includes(prev.department)
-          ? prev
-          : { ...prev, department: names[0] ?? '' }
-      ));
+      setDepartments(list.map(d => d.name));
     } catch {
       setDepartments([]);
     }
   }, []);
 
-  useEffect(() => { loadDepartments(); }, [loadDepartments]);
+  useEffect(() => { if (user) loadDepartments(); }, [user, loadDepartments]);
+
+  useEffect(() => {
+    if (!user) return;
+    setFilters(prev => (
+      prev.department && visibleDepartments.includes(prev.department)
+        ? prev
+        : { ...prev, department: visibleDepartments[0] ?? '' }
+    ));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, visibleDepartments.join('|')]);
 
   const loadPositions = useCallback(async (dept) => {
     try {
@@ -74,7 +101,7 @@ export default function App() {
   }, []);
 
   const loadData = useCallback(async () => {
-    if (!filters.department) return;
+    if (!user || !filters.department) return;
     setLoading(true);
     setError(null);
     try {
@@ -91,13 +118,13 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  }, [filters.department, year, month]);
+  }, [user, filters.department, year, month]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
   useEffect(() => {
-    if (filters.department) loadPositions(filters.department);
-  }, [filters.department, loadPositions]);
+    if (user && filters.department) loadPositions(filters.department);
+  }, [user, filters.department, loadPositions]);
 
   // Filter rows: by position, then by shift
   const visibleEmployees = useMemo(() => {
@@ -200,6 +227,9 @@ export default function App() {
 
   const exportUrl = getExportUrl(filters.department, year, month);
 
+  if (!authChecked) return null;
+  if (!user) return <Login onLogin={setUser} />;
+
   return (
     <div className="app">
       <header className="app-header">
@@ -215,14 +245,17 @@ export default function App() {
         filters={filters}
         period={period}
         positions={positions}
-        departments={departments}
+        departments={visibleDepartments}
+        isAdmin={user.is_admin}
         onFilterChange={patch => setFilters(prev => ({ ...prev, ...patch }))}
         onPeriodChange={setPeriod}
         onAddEmployee={() => setShowAddEmployee(true)}
         onUploadClick={() => setShowUpload(true)}
         onManagePositions={() => setShowAddPosition(true)}
         onManageDepartments={() => setShowManageDepartments(true)}
+        onManageUsers={() => setShowManageUsers(true)}
         onCopySchedule={() => setShowCopySchedule(true)}
+        onLogout={handleLogout}
       />
 
       {error && <div className="load-error">{error}</div>}
@@ -264,7 +297,7 @@ export default function App() {
         />
       )}
       {showUpload && (
-        <EmployeeUpload departments={departments} onSuccess={loadData} onClose={() => setShowUpload(false)} />
+        <EmployeeUpload departments={visibleDepartments} onSuccess={loadData} onClose={() => setShowUpload(false)} />
       )}
       {showAddEmployee && (
         <AddEmployee
@@ -277,7 +310,7 @@ export default function App() {
       {showAddPosition && (
         <AddPosition
           department={filters.department}
-          departments={departments}
+          departments={visibleDepartments}
           positions={positions}
           onSuccess={dept => loadPositions(dept || filters.department)}
           onClose={() => setShowAddPosition(false)}
@@ -288,6 +321,13 @@ export default function App() {
           departments={departments}
           onSuccess={loadDepartments}
           onClose={() => setShowManageDepartments(false)}
+        />
+      )}
+      {showManageUsers && (
+        <UsersAdmin
+          departments={departments}
+          currentUserId={user.id}
+          onClose={() => setShowManageUsers(false)}
         />
       )}
       {showCopySchedule && (

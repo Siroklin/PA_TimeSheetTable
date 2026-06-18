@@ -11,6 +11,45 @@ class Department(DepartmentCreate):
         from_attributes = True
 
 
+class LoginRequest(BaseModel):
+    login: str
+    password: str
+
+
+class UserBase(BaseModel):
+    name: str
+    email: str = ""
+    login: str
+    is_admin: bool = False
+
+
+class UserCreate(UserBase):
+    password: str
+    departments: list[str] = []
+
+
+class UserUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    login: Optional[str] = None
+    password: Optional[str] = None
+    is_admin: Optional[bool] = None
+    departments: Optional[list[str]] = None
+
+
+class User(UserBase):
+    id: int
+    departments: list[str] = []
+
+    class Config:
+        from_attributes = True
+
+
+class LoginResponse(BaseModel):
+    token: str
+    user: User
+
+
 class EmployeeCreate(BaseModel):
     code: str
     name: str

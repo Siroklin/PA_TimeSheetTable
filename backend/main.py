@@ -15,6 +15,11 @@ from .database import SessionLocal, engine, Base
 from . import models
 from . import schemas
 from .excel import generate_excel
+from .auth import (
+    hash_password, verify_password, create_token,
+    get_current_user, require_admin,
+    check_department_access, check_employee_access,
+)
 
 Base.metadata.create_all(bind=engine)
 
@@ -37,7 +42,23 @@ def _seed_departments():
         db.close()
 
 
+def _seed_admin():
+    """First-run seed: create the default admin/admin account."""
+    db = SessionLocal()
+    try:
+        if db.query(models.User).first():
+            return
+        db.add(models.User(
+            name="Администратор", email="", login="admin",
+            password_hash=hash_password("admin"), is_admin=True,
+        ))
+        db.commit()
+    finally:
+        db.close()
+
+
 _seed_departments()
+_seed_admin()
 
 app = FastAPI()
 
@@ -57,15 +78,111 @@ def get_db():
         db.close()
 
 
+def _user_out(db: Session, u: models.User) -> schemas.User:
+    depts = [
+        ud.department for ud in
+        db.query(models.UserDepartment).filter_by(user_id=u.id)
+        .order_by(models.UserDepartment.department).all()
+    ]
+    return schemas.User(
+        id=u.id, name=u.name, email=u.email, login=u.login,
+        is_admin=u.is_admin, departments=depts,
+    )
+
+
+# ── Auth ──────────────────────────────────────────────────────────────────────
+
+@app.post("/api/auth/login", response_model=schemas.LoginResponse)
+def login(body: schemas.LoginRequest, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter_by(login=body.login).first()
+    if not user or not verify_password(body.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Неверный логин или пароль")
+    token = create_token(user.id)
+    return schemas.LoginResponse(token=token, user=_user_out(db, user))
+
+
+@app.get("/api/auth/me", response_model=schemas.User)
+def me(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return _user_out(db, current_user)
+
+
+# ── Users (admin only) ───────────────────────────────────────────────────────
+
+@app.get("/api/users", response_model=list[schemas.User])
+def list_users(_: models.User = Depends(require_admin), db: Session = Depends(get_db)):
+    return [_user_out(db, u) for u in db.query(models.User).order_by(models.User.login).all()]
+
+
+@app.post("/api/users", response_model=schemas.User)
+def create_user(body: schemas.UserCreate, _: models.User = Depends(require_admin), db: Session = Depends(get_db)):
+    if db.query(models.User).filter_by(login=body.login).first():
+        raise HTTPException(status_code=409, detail="Такой логин уже существует")
+    u = models.User(
+        name=body.name, email=body.email, login=body.login,
+        password_hash=hash_password(body.password), is_admin=body.is_admin,
+    )
+    db.add(u)
+    db.commit()
+    db.refresh(u)
+    for dept in body.departments:
+        db.add(models.UserDepartment(user_id=u.id, department=dept))
+    db.commit()
+    return _user_out(db, u)
+
+
+@app.put("/api/users/{user_id}", response_model=schemas.User)
+def update_user(
+    user_id: int, body: schemas.UserUpdate,
+    _: models.User = Depends(require_admin), db: Session = Depends(get_db),
+):
+    u = db.get(models.User, user_id)
+    if not u:
+        raise HTTPException(status_code=404, detail="Not found")
+    if body.login and body.login != u.login:
+        if db.query(models.User).filter_by(login=body.login).first():
+            raise HTTPException(status_code=409, detail="Такой логин уже существует")
+        u.login = body.login
+    if body.name is not None:
+        u.name = body.name
+    if body.email is not None:
+        u.email = body.email
+    if body.is_admin is not None:
+        u.is_admin = body.is_admin
+    if body.password:
+        u.password_hash = hash_password(body.password)
+    if body.departments is not None:
+        db.query(models.UserDepartment).filter_by(user_id=u.id).delete()
+        for dept in body.departments:
+            db.add(models.UserDepartment(user_id=u.id, department=dept))
+    db.commit()
+    return _user_out(db, u)
+
+
+@app.delete("/api/users/{user_id}")
+def delete_user(user_id: int, admin: models.User = Depends(require_admin), db: Session = Depends(get_db)):
+    if user_id == admin.id:
+        raise HTTPException(status_code=400, detail="Нельзя удалить самого себя")
+    u = db.get(models.User, user_id)
+    if not u:
+        raise HTTPException(status_code=404, detail="Not found")
+    db.query(models.UserDepartment).filter_by(user_id=user_id).delete()
+    db.delete(u)
+    db.commit()
+    return {"ok": True}
+
+
 # ── Departments ───────────────────────────────────────────────────────────────
 
 @app.get("/api/departments", response_model=list[schemas.Department])
-def get_departments(db: Session = Depends(get_db)):
+def get_departments(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     return db.query(models.Department).order_by(models.Department.name).all()
 
 
 @app.post("/api/departments", response_model=schemas.Department)
-def create_department(body: schemas.DepartmentCreate, db: Session = Depends(get_db)):
+def create_department(
+    body: schemas.DepartmentCreate, db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
     existing = db.get(models.Department, body.name)
     if existing:
         raise HTTPException(status_code=409, detail="Уже существует")
@@ -77,7 +194,10 @@ def create_department(body: schemas.DepartmentCreate, db: Session = Depends(get_
 
 
 @app.delete("/api/departments/{name}")
-def delete_department(name: str, db: Session = Depends(get_db)):
+def delete_department(
+    name: str, db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
     obj = db.get(models.Department, name)
     if not obj:
         raise HTTPException(status_code=404, detail="Not found")
@@ -99,7 +219,11 @@ def delete_department(name: str, db: Session = Depends(get_db)):
 # ── Employees ─────────────────────────────────────────────────────────────────
 
 @app.get("/api/employees", response_model=list[schemas.Employee])
-def get_employees(department: str = Query(...), db: Session = Depends(get_db)):
+def get_employees(
+    department: str = Query(...), db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    check_department_access(current_user, department, db)
     return (
         db.query(models.Employee)
         .filter(models.Employee.department == department)
@@ -108,7 +232,11 @@ def get_employees(department: str = Query(...), db: Session = Depends(get_db)):
 
 
 @app.post("/api/employees", response_model=schemas.Employee)
-def create_employee(emp: schemas.EmployeeCreate, db: Session = Depends(get_db)):
+def create_employee(
+    emp: schemas.EmployeeCreate, db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    check_department_access(current_user, emp.department, db)
     db_emp = models.Employee(**emp.model_dump())
     db.add(db_emp)
     db.commit()
@@ -117,7 +245,12 @@ def create_employee(emp: schemas.EmployeeCreate, db: Session = Depends(get_db)):
 
 
 @app.post("/api/employees/bulk")
-def bulk_employees(employees: list[schemas.EmployeeCreate], db: Session = Depends(get_db)):
+def bulk_employees(
+    employees: list[schemas.EmployeeCreate], db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    for emp in employees:
+        check_department_access(current_user, emp.department, db)
     added = 0
     for emp in employees:
         exists = db.query(models.Employee).filter_by(
@@ -131,10 +264,12 @@ def bulk_employees(employees: list[schemas.EmployeeCreate], db: Session = Depend
 
 
 @app.delete("/api/employees/{emp_id}")
-def delete_employee(emp_id: int, db: Session = Depends(get_db)):
+def delete_employee(
+    emp_id: int, db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    check_employee_access(current_user, emp_id, db)
     emp = db.get(models.Employee, emp_id)
-    if not emp:
-        raise HTTPException(status_code=404, detail="Not found")
     db.delete(emp)
     db.commit()
     return {"ok": True}
@@ -148,7 +283,9 @@ def get_schedule(
     year: int = Query(...),
     month: int = Query(...),
     db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
 ):
+    check_department_access(current_user, department, db)
     emp_ids = [
         e.id for e in db.query(models.Employee)
         .filter(models.Employee.department == department)
@@ -184,7 +321,9 @@ def update_cell(
     day: int,
     cell: schemas.CellUpdate,
     db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
 ):
+    check_employee_access(current_user, emp_id, db)
     entry = (
         db.query(models.ScheduleEntry)
         .filter_by(employee_id=emp_id, year=year, month=month, day=day)
@@ -219,7 +358,9 @@ def clear_schedule(
     year: int,
     month: int,
     db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
 ):
+    check_employee_access(current_user, emp_id, db)
     db.query(models.ScheduleEntry).filter_by(
         employee_id=emp_id, year=year, month=month
     ).delete()
@@ -235,7 +376,9 @@ def get_employee_shifts(
     year: int = Query(...),
     month: int = Query(...),
     db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
 ):
+    check_department_access(current_user, department, db)
     emp_ids = [
         e.id for e in db.query(models.Employee)
         .filter(models.Employee.department == department)
@@ -263,7 +406,11 @@ def get_employee_shifts(
 # ── Department-Position reference ─────────────────────────────────────────────
 
 @app.get("/api/positions", response_model=list[schemas.DepartmentPosition])
-def get_positions(department: str = Query(...), db: Session = Depends(get_db)):
+def get_positions(
+    department: str = Query(...), db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    check_department_access(current_user, department, db)
     return (
         db.query(models.DepartmentPosition)
         .filter(models.DepartmentPosition.department == department)
@@ -273,7 +420,11 @@ def get_positions(department: str = Query(...), db: Session = Depends(get_db)):
 
 
 @app.post("/api/positions", response_model=schemas.DepartmentPosition)
-def add_position(body: schemas.DepartmentPositionCreate, db: Session = Depends(get_db)):
+def add_position(
+    body: schemas.DepartmentPositionCreate, db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    check_department_access(current_user, body.department, db)
     existing = db.query(models.DepartmentPosition).filter_by(
         department=body.department, position=body.position
     ).first()
@@ -287,10 +438,14 @@ def add_position(body: schemas.DepartmentPositionCreate, db: Session = Depends(g
 
 
 @app.delete("/api/positions/{pos_id}")
-def delete_position(pos_id: int, db: Session = Depends(get_db)):
+def delete_position(
+    pos_id: int, db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
     obj = db.get(models.DepartmentPosition, pos_id)
     if not obj:
         raise HTTPException(status_code=404, detail="Not found")
+    check_department_access(current_user, obj.department, db)
     db.delete(obj)
     db.commit()
     return {"ok": True}
@@ -299,7 +454,11 @@ def delete_position(pos_id: int, db: Session = Depends(get_db)):
 # ── Schedule patterns ─────────────────────────────────────────────────────────
 
 @app.post("/api/schedule-patterns")
-def save_schedule_pattern(body: schemas.SchedulePatternSave, db: Session = Depends(get_db)):
+def save_schedule_pattern(
+    body: schemas.SchedulePatternSave, db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    check_employee_access(current_user, body.employee_id, db)
     existing = db.query(models.SchedulePattern).filter_by(
         employee_id=body.employee_id, year=body.year, month=body.month
     ).first()
@@ -375,7 +534,9 @@ def copy_schedule(
     to_year:     int = Query(...),
     to_month:    int = Query(...),
     db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
 ):
+    check_department_access(current_user, department, db)
     employees = (
         db.query(models.Employee)
         .filter(models.Employee.department == department)
@@ -485,7 +646,9 @@ def export_excel(
     year: int = Query(...),
     month: int = Query(...),
     db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
 ):
+    check_department_access(current_user, department, db)
     employees = (
         db.query(models.Employee)
         .filter(models.Employee.department == department)

@@ -11,9 +11,10 @@ function getYears() {
 }
 
 export default function Filters({
-  filters, period, positions, departments,
+  filters, period, positions, departments, isAdmin,
   onFilterChange, onPeriodChange,
-  onAddEmployee, onUploadClick, onManagePositions, onManageDepartments, onCopySchedule,
+  onAddEmployee, onUploadClick, onManagePositions, onManageDepartments, onManageUsers,
+  onCopySchedule, onLogout,
 }) {
   const { department, position, shift } = filters;
   const { year, month } = period;
@@ -103,9 +104,12 @@ export default function Filters({
             <button onClick={() => menuAction(onUploadClick)}>Загрузить сотрудников</button>
             <div className="service-separator" />
             <button onClick={() => menuAction(onManagePositions)}>Управление должностями</button>
-            <button onClick={() => menuAction(onManageDepartments)}>Управление отделами</button>
+            {isAdmin && <button onClick={() => menuAction(onManageDepartments)}>Управление отделами</button>}
+            {isAdmin && <button onClick={() => menuAction(onManageUsers)}>Управление пользователями</button>}
             <div className="service-separator" />
             <button onClick={() => menuAction(onCopySchedule)}>Копировать расписание</button>
+            <div className="service-separator" />
+            <button onClick={() => menuAction(onLogout)}>Выйти</button>
           </div>
         )}
       </div>
