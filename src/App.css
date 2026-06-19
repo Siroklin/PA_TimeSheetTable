@@ -387,6 +387,7 @@ tbody .col-name {
   white-space: normal;
   line-height: 1.2;
   padding: 3px 8px !important;
+  height: 32px;
 }
 
 .emp-actions {
@@ -429,10 +430,32 @@ tbody .col-name {
 }
 .btn-delete-emp:hover { background: #f8d7da; color: #c0392b; }
 
+.btn-edit-emp {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: #b0bac5;
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.btn-edit-emp:hover { background: #d6e4f0; color: #1a3c5e; }
+
 .emp-name {
   display: block;
   font-weight: 600;
   font-size: 0.82rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .emp-position {
@@ -441,6 +464,9 @@ tbody .col-name {
   color: #7a90a8;
   font-weight: 400;
   margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .day-header {

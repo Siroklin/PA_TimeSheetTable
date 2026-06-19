@@ -61,6 +61,7 @@ export default function App() {
   const [fillingEmp, setFillingEmp]               = useState(null);
   const [showUpload, setShowUpload]               = useState(false);
   const [showAddEmployee, setShowAddEmployee]     = useState(false);
+  const [editingEmployee, setEditingEmployee]     = useState(null);
   const [showAddPosition, setShowAddPosition]     = useState(false);
   const [showManageDepartments, setShowManageDepartments] = useState(false);
   const [showManageUsers, setShowManageUsers]     = useState(false);
@@ -276,6 +277,7 @@ export default function App() {
             onCellClick={handleCellClick}
             onFillClick={setFillingEmp}
             onDeleteEmployee={handleDeleteEmployee}
+            onEditEmployee={setEditingEmployee}
           />
         </div>
       )}
@@ -308,6 +310,15 @@ export default function App() {
           positions={positions}
           onSuccess={loadData}
           onClose={() => setShowAddEmployee(false)}
+        />
+      )}
+      {editingEmployee && (
+        <AddEmployee
+          department={filters.department}
+          positions={positions}
+          employee={editingEmployee}
+          onSuccess={loadData}
+          onClose={() => setEditingEmployee(null)}
         />
       )}
       {showAddPosition && (

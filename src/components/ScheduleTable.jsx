@@ -13,7 +13,7 @@ function isWeekend(year, month, day) {
 
 export default function ScheduleTable({
   employees, schedule, shifts = {}, year, month, readOnly = false,
-  onCellClick, onFillClick, onDeleteEmployee,
+  onCellClick, onFillClick, onDeleteEmployee, onEditEmployee,
 }) {
   const daysInMonth = new Date(year, month, 0).getDate();
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
@@ -45,8 +45,8 @@ export default function ScheduleTable({
                 <td className="col-name">
                   <div className="emp-info">
                     <div className="emp-left">
-                      <span className="emp-name">{emp.name}</span>
-                      <span className="emp-position">({emp.position})</span>
+                      <span className="emp-name" title={emp.name}>{emp.name}</span>
+                      <span className="emp-position" title={emp.position}>({emp.position})</span>
                     </div>
                     <div className="emp-actions">
                       <span
@@ -62,6 +62,15 @@ export default function ScheduleTable({
                           onClick={() => onFillClick(emp)}
                         >
                           Граф.
+                        </button>
+                      )}
+                      {!readOnly && (
+                        <button
+                          className="btn-edit-emp"
+                          title="Изменить данные сотрудника"
+                          onClick={() => onEditEmployee(emp)}
+                        >
+                          ✎
                         </button>
                       )}
                       {!readOnly && (

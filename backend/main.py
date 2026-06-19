@@ -260,11 +260,44 @@ def create_employee(
     current_user: models.User = Depends(require_can_edit),
 ):
     check_department_access(current_user, emp.department, db)
+    exists = db.query(models.Employee).filter_by(
+        code=emp.code, department=emp.department
+    ).first()
+    if exists:
+        raise HTTPException(
+            status_code=400,
+            detail="Сотрудник с таким кодом уже существует в этом отделе",
+        )
     db_emp = models.Employee(**emp.model_dump())
     db.add(db_emp)
     db.commit()
     db.refresh(db_emp)
     return db_emp
+
+
+@app.put("/api/employees/{emp_id}", response_model=schemas.Employee)
+def update_employee(
+    emp_id: int, patch: schemas.EmployeeUpdate, db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_can_edit),
+):
+    emp = check_employee_access(current_user, emp_id, db)
+    new_code = patch.code if patch.code is not None else emp.code
+    if new_code != emp.code:
+        exists = db.query(models.Employee).filter(
+            models.Employee.department == emp.department,
+            models.Employee.code == new_code,
+            models.Employee.id != emp_id,
+        ).first()
+        if exists:
+            raise HTTPException(
+                status_code=400,
+                detail="Сотрудник с таким кодом уже существует в этом отделе",
+            )
+    for field, value in patch.model_dump(exclude_unset=True).items():
+        setattr(emp, field, value)
+    db.commit()
+    db.refresh(emp)
+    return emp
 
 
 @app.post("/api/employees/bulk")

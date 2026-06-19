@@ -19,7 +19,9 @@ async function apiFetch(url, options = {}) {
   const res = await fetch(url, { ...options, headers });
   if (!res.ok) {
     const text = await res.text().catch(() => '');
-    throw new Error(`${res.status} ${text}`);
+    let detail = text;
+    try { detail = JSON.parse(text).detail ?? text; } catch { /* not JSON */ }
+    throw new Error(detail || `${res.status}`);
   }
   return res.json();
 }
@@ -67,6 +69,14 @@ export function deleteUser(id) {
 export function createEmployee(data) {
   return apiFetch('/api/employees', {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+export function updateEmployee(empId, data) {
+  return apiFetch(`/api/employees/${empId}`, {
+    method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });

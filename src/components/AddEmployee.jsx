@@ -1,9 +1,14 @@
 import { useState } from 'react';
-import { createEmployee } from '../api';
+import { createEmployee, updateEmployee } from '../api';
 
-export default function AddEmployee({ department, positions, onSuccess, onClose }) {
+export default function AddEmployee({ department, positions, employee, onSuccess, onClose }) {
+  const isEdit = !!employee;
   const firstPos = (positions && positions.length > 0) ? positions[0].position : '';
-  const [form, setForm]   = useState({ code: '', name: '', position: firstPos });
+  const [form, setForm] = useState(
+    isEdit
+      ? { code: employee.code, name: employee.name, position: employee.position }
+      : { code: '', name: '', position: firstPos }
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState(null);
 
@@ -15,11 +20,15 @@ export default function AddEmployee({ department, positions, onSuccess, onClose 
     setSaving(true);
     setError(null);
     try {
-      await createEmployee({ ...form, department });
+      if (isEdit) {
+        await updateEmployee(employee.id, form);
+      } else {
+        await createEmployee({ ...form, department });
+      }
       onSuccess();
       onClose();
-    } catch {
-      setError('Ошибка при сохранении. Попробуйте ещё раз.');
+    } catch (err) {
+      setError(err.message || 'Ошибка при сохранении. Попробуйте ещё раз.');
     } finally {
       setSaving(false);
     }
@@ -31,7 +40,7 @@ export default function AddEmployee({ department, positions, onSuccess, onClose 
     <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="modal modal-add-emp">
         <div className="modal-header">
-          <div className="modal-title">Добавить сотрудника</div>
+          <div className="modal-title">{isEdit ? 'Изменить сотрудника' : 'Добавить сотрудника'}</div>
           <div className="modal-subtitle">Отдел: <strong>{department}</strong></div>
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
@@ -93,7 +102,7 @@ export default function AddEmployee({ department, positions, onSuccess, onClose 
         <div className="modal-footer">
           <button className="btn-cancel" onClick={onClose} disabled={saving}>Отмена</button>
           <button className="btn-save" onClick={handleSave} disabled={!canSave || saving}>
-            {saving ? 'Сохранение...' : 'Добавить'}
+            {saving ? 'Сохранение...' : (isEdit ? 'Сохранить' : 'Добавить')}
           </button>
         </div>
       </div>

@@ -66,6 +66,12 @@ class Employee(EmployeeCreate):
         from_attributes = True
 
 
+class EmployeeUpdate(BaseModel):
+    code: Optional[str] = None
+    name: Optional[str] = None
+    position: Optional[str] = None
+
+
 class CellUpdate(BaseModel):
     day_status: Optional[str] = None
     night_status: Optional[str] = None
