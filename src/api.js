@@ -64,6 +64,14 @@ export function deleteUser(id) {
   return apiFetch(`/api/users/${id}`, { method: 'DELETE' });
 }
 
+export function createEmployee(data) {
+  return apiFetch('/api/employees', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
 export function fetchEmployees(department) {
   return apiFetch(`/api/employees?department=${encodeURIComponent(department)}`);
 }

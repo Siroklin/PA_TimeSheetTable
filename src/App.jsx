@@ -316,7 +316,10 @@ export default function App() {
           departments={visibleDepartments}
           positions={positions}
           onSuccess={dept => loadPositions(dept || filters.department)}
-          onClose={() => setShowAddPosition(false)}
+          onClose={() => {
+            setShowAddPosition(false);
+            loadPositions(filters.department);
+          }}
         />
       )}
       {showManageDepartments && (

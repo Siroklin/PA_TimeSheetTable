@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createEmployee } from '../api';
 
 export default function AddEmployee({ department, positions, onSuccess, onClose }) {
   const firstPos = (positions && positions.length > 0) ? positions[0].position : '';
@@ -14,12 +15,7 @@ export default function AddEmployee({ department, positions, onSuccess, onClose 
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch('/api/employees', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, department }),
-      });
-      if (!res.ok) throw new Error();
+      await createEmployee({ ...form, department });
       onSuccess();
       onClose();
     } catch {
