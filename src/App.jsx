@@ -12,7 +12,7 @@ import CopySchedule from './components/CopySchedule';
 import Login from './components/Login';
 import {
   fetchEmployees, fetchSchedule, updateCell, getExportUrl,
-  fetchEmployeeShifts, clearSchedule, deleteEmployee,
+  fetchEmployeeShifts, deleteEmployee,
   fetchPositions, savePattern, fetchDepartments,
   fetchMe, getToken, clearToken,
 } from './api';
@@ -186,19 +186,20 @@ export default function App() {
   async function handleFillApply(empId, updates, patternInfo) {
     const { pattern, shift, startDate } = patternInfo || {};
 
-    // Optimistic: replace entire month with pattern
-    const daysInMonth = new Date(year, month, 0).getDate();
-    const newSched = {};
-    for (let d = 1; d <= daysInMonth; d++) {
-      const u = updates[d] ?? {};
-      newSched[d] = {
-        day:          u.day          ?? '',
-        nightShift:   u.nightShift   ?? '',
-        dayComment:   '',
-        nightComment: '',
-      };
-    }
-    setScheduleMap(prev => ({ ...prev, [empId]: newSched }));
+    // Optimistic: merge pattern values into the existing schedule — only
+    // days returned by applyPattern (i.e. on/after the chosen start date)
+    // are touched, so earlier days keep whatever was already there.
+    setScheduleMap(prev => {
+      const empSched = { ...(prev[empId] ?? {}) };
+      for (const [dStr, u] of Object.entries(updates)) {
+        const d = Number(dStr);
+        const cur = { ...(empSched[d] ?? {}) };
+        if ('day' in u)        cur.day        = u.day;
+        if ('nightShift' in u) cur.nightShift = u.nightShift;
+        empSched[d] = cur;
+      }
+      return { ...prev, [empId]: empSched };
+    });
 
     if (shift) {
       setShiftsMap(prev => ({ ...prev, [empId]: shift }));
@@ -209,8 +210,6 @@ export default function App() {
       savePattern(empId, year, month, { pattern, shift, startDate }).catch(() => {});
     }
 
-    // Clear old schedule then write new entries
-    await clearSchedule(empId, year, month);
     const calls = Object.entries(updates)
       .filter(([, u]) => Object.keys(u).length > 0)
       .map(([d, u]) => {
@@ -291,8 +290,7 @@ export default function App() {
       )}
 
       <div className="legend">
-        <div className="legend-item"><div className="legend-dot" style={{ background: '#d4edda' }} />8 — Работает (5-2, 8ч)</div>
-        <div className="legend-item"><div className="legend-dot" style={{ background: '#a8d8b9' }} />11 — Работает (смена, 11ч)</div>
+        <div className="legend-item"><div className="legend-dot" style={{ background: '#d4edda' }} />Число — Работает (часы по графику)</div>
         <div className="legend-item"><div className="legend-dot" style={{ background: '#fff3cd' }} />В — Выходной</div>
         <div className="legend-item"><div className="legend-dot" style={{ background: '#cce5ff' }} />О — Отпуск</div>
         <div className="legend-item"><div className="legend-dot" style={{ background: '#f8d7da' }} />Б — Больничный</div>

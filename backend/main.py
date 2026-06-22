@@ -607,7 +607,7 @@ def copy_schedule(
                 models.ScheduleEntry.employee_id == emp.id,
                 models.ScheduleEntry.year == from_year,
                 models.ScheduleEntry.month == from_month,
-                (models.ScheduleEntry.day_status == 'У') | (models.ScheduleEntry.night_status == 'У'),
+                (models.ScheduleEntry.day_status.like('У%')) | (models.ScheduleEntry.night_status.like('У%')),
             )
             .first()
         )

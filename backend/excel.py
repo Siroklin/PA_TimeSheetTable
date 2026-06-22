@@ -1,11 +1,11 @@
 import calendar
+import re
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
+WORK_COLOR = 'D4EDDA'
 SHIFT_COLORS = {
-    '8':  'D4EDDA',
-    '11': 'A8D8B9',
     'В':  'FFF3CD',
     'О':  'CCE5FF',
     'Б':  'F8D7DA',
@@ -20,8 +20,7 @@ DAY_EMPTY = 'EBEBEB'
 NIGHT_EMPTY = 'C8C8C8'
 
 LEGEND = [
-    ('8',   'D4EDDA', 'Работает (5-2, 8ч)'),
-    ('11',  'A8D8B9', 'Работает (смена, 11ч)'),
+    ('8',   WORK_COLOR, 'Работает (часы по графику)'),
     ('В',   'FFF3CD', 'Выходной'),
     ('О',   'CCE5FF', 'Отпуск'),
     ('Б',   'F8D7DA', 'Больничный'),
@@ -32,6 +31,20 @@ LEGEND = [
     ('У',   'CED4DA', 'Увольнение'),
     ('Д',   'FFD43B', 'Доп. смена'),
 ]
+
+_CODE_RE = re.compile(r'^(\D*)(\d+)?$')
+
+
+def _cell_color(value: str, empty: str) -> str:
+    """Splits a value like 'Д4' or '8' into a letter code + hour count and
+    returns the matching fill color (work hours have no letter prefix)."""
+    if not value:
+        return empty
+    m = _CODE_RE.match(value)
+    code = m.group(1) if m else value
+    if code == '':
+        return WORK_COLOR
+    return SHIFT_COLORS.get(code, empty)
 
 MONTH_NAMES = [
     'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
@@ -112,12 +125,12 @@ def generate_excel(employees, schedule_map: dict, year: int, month: int, departm
             night_val = cell_data.get('nightShift') or ''
 
             c_d = ws.cell(row=row, column=col_d, value=day_val)
-            c_d.fill = _fill(SHIFT_COLORS.get(day_val, DAY_EMPTY))
+            c_d.fill = _fill(_cell_color(day_val, DAY_EMPTY))
             c_d.alignment = Alignment(horizontal='center', vertical='center')
             c_d.font = Font(size=9)
 
             c_n = ws.cell(row=row, column=col_d + 1, value=night_val)
-            c_n.fill = _fill(SHIFT_COLORS.get(night_val, NIGHT_EMPTY))
+            c_n.fill = _fill(_cell_color(night_val, NIGHT_EMPTY))
             c_n.alignment = Alignment(horizontal='center', vertical='center')
             c_n.font = Font(size=9)
 

@@ -32,12 +32,10 @@ export default function ScheduleFiller({ employee, year, month, onApply, onClose
   const parsedStart = new Date(startDate + 'T00:00:00');
   const preview = buildPreview(pattern, year, month, parsedStart, shift);
   const isDNOV = pattern === 'ДНОВ';
-  const needsStart = pattern === '2x2' || pattern === 'ДНОВ';
+  const isCycle = pattern === '2x2' || pattern === 'ДНОВ';
 
   function handleApply() {
     const updates = applyPattern(pattern, year, month, { startDate: parsedStart, shift });
-    // For rolling cycles (2x2/ДНОВ) store the actual start date;
-    // for week-based (5-0/6-1) startDate doesn't matter but we store month start for consistency.
     const startDateStr = startDate; // already 'YYYY-MM-DD' string
     onApply(employee.id, updates, {
       pattern,
@@ -93,20 +91,21 @@ export default function ScheduleFiller({ employee, year, month, onApply, onClose
             ))}
           </div>
 
-          {/* Start date for rolling cycles */}
-          {needsStart && (
-            <div className="filler-start-row">
-              <div className="filler-section-label">
-                {isDNOV ? 'Начало цикла (первый рабочий день — Д)' : 'Начало цикла (первый рабочий день)'}
-              </div>
-              <input
-                type="date"
-                className="filler-date-input"
-                value={startDate}
-                onChange={e => setStartDate(e.target.value)}
-              />
+          {/* Start date — applies the pattern only from this date onward,
+              leaving earlier days untouched (e.g. mid-month shift change) */}
+          <div className="filler-start-row">
+            <div className="filler-section-label">
+              {isDNOV ? 'Начало цикла (первый рабочий день — Д)'
+                : isCycle ? 'Начало цикла (первый рабочий день)'
+                : 'Применять график начиная с'}
             </div>
-          )}
+            <input
+              type="date"
+              className="filler-date-input"
+              value={startDate}
+              onChange={e => setStartDate(e.target.value)}
+            />
+          </div>
 
           {/* Preview */}
           <div className="filler-section-label">Предпросмотр (первые 14 дней)</div>

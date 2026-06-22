@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { SHIFT_COLORS } from '../mockData';
+import { SHIFT_COLORS, WORK_COLOR, splitCode } from '../mockData';
+
+const WORK = 'WORK'; // sentinel for "code is blank, cell is pure work hours"
 
 const SHIFT_OPTIONS = [
-  { value: '8',  label: '8 — Работает (8ч, график 5-2)' },
-  { value: '11', label: '11 — Работает (11ч, сменный график)' },
+  { value: WORK, label: 'Работает' },
   { value: 'В',  label: 'В — Выходной' },
   { value: 'О',  label: 'О — Отпуск' },
   { value: 'Б',  label: 'Б — Больничный' },
@@ -20,8 +21,14 @@ const MONTH_NAMES = ['января','февраля','марта','апреля'
 
 function pad2(n) { return String(n).padStart(2, '0'); }
 
+function codeColor(code) {
+  return code === WORK ? WORK_COLOR : (SHIFT_COLORS[code] || '#e9ecef');
+}
+
 export default function CellEditor({ cell, onSave, onClose }) {
-  const [value, setValue] = useState(cell.value);
+  const initial = splitCode(cell.value);
+  const [code, setCode] = useState(initial.code === '' ? WORK : initial.code);
+  const [hours, setHours] = useState(initial.hours ?? 8);
   const [comment, setComment] = useState(cell.comment);
   const dialogRef = useRef(null);
 
@@ -31,14 +38,16 @@ export default function CellEditor({ cell, onSave, onClose }) {
   const [endDate, setEndDate] = useState(minDateStr);
 
   useEffect(() => {
-    setValue(cell.value);
+    const init = splitCode(cell.value);
+    setCode(init.code === '' ? WORK : init.code);
+    setHours(init.hours ?? 8);
     setComment(cell.comment);
     setEndDate(minDateStr);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cell]);
 
-  function handleValueChange(v) {
-    setValue(v);
+  function handleCodeChange(v) {
+    setCode(v);
     if (v === 'У') setEndDate(maxDateStr);
   }
 
@@ -57,6 +66,9 @@ export default function CellEditor({ cell, onSave, onClose }) {
   const endDay = Number(endDate.split('-')[2]);
 
   function handleSave() {
+    const codeStr = code === WORK ? '' : code;
+    const h = Number(hours) || 0;
+    const value = h > 0 ? `${codeStr}${h}` : codeStr;
     onSave({
       empId: cell.empId, day: cell.day, endDay: Math.max(cell.day, endDay),
       shiftType: cell.shiftType, value, comment,
@@ -78,13 +90,25 @@ export default function CellEditor({ cell, onSave, onClose }) {
             {SHIFT_OPTIONS.map(opt => (
               <button
                 key={opt.value}
-                className={`shift-btn ${value === opt.value ? 'active' : ''}`}
-                style={value === opt.value ? { backgroundColor: SHIFT_COLORS[opt.value] || '#e9ecef' } : {}}
-                onClick={() => handleValueChange(opt.value)}
+                className={`shift-btn ${code === opt.value ? 'active' : ''}`}
+                style={code === opt.value ? { backgroundColor: codeColor(opt.value) } : {}}
+                onClick={() => handleCodeChange(opt.value)}
               >
                 {opt.label}
               </button>
             ))}
+          </div>
+
+          <div className="comment-group">
+            <label>Часы работы</label>
+            <input
+              type="number"
+              className="comment-input"
+              min={0}
+              max={24}
+              value={hours}
+              onChange={e => setHours(e.target.value)}
+            />
           </div>
 
           <div className="filler-start-row">
@@ -95,7 +119,7 @@ export default function CellEditor({ cell, onSave, onClose }) {
               value={endDate}
               min={minDateStr}
               max={maxDateStr}
-              disabled={value === 'У'}
+              disabled={code === 'У'}
               onChange={e => setEndDate(e.target.value)}
             />
             {endDay > cell.day && (
