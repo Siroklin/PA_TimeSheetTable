@@ -1205,6 +1205,21 @@ tbody .col-name {
   border-bottom: none;
 }
 
+/* ── Users admin modal (edit form) ──────────────────── */
+.modal-users-edit { width: 540px; max-width: 95vw; }
+
+.users-edit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.users-edit-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
 /* ── Copy schedule modal ────────────────────────────── */
 .modal-copy { max-width: 440px; }
 

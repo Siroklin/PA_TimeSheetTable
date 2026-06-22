@@ -88,7 +88,7 @@ export default function UsersAdmin({ departments, currentUserId, onClose }) {
 
   return (
     <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="modal modal-add-pos">
+      <div className={`modal modal-add-pos ${editingId !== null ? 'modal-users-edit' : ''}`}>
         <div className="modal-header">
           <div className="modal-title">Управление пользователями</div>
           <button className="modal-close" onClick={onClose}>✕</button>
@@ -119,48 +119,55 @@ export default function UsersAdmin({ departments, currentUserId, onClose }) {
 
           {editingId !== null && (
             <>
-              <div className="form-group">
-                <label>Имя</label>
-                <input className="form-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
-              </div>
-              <div className="form-group">
-                <label>Почта</label>
-                <input className="form-input" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
-              </div>
-              <div className="form-group">
-                <label>Логин</label>
-                <input className="form-input" value={form.login} onChange={e => setForm(f => ({ ...f, login: e.target.value }))} />
-              </div>
-              <div className="form-group">
-                <label>Пароль {editingId !== 'new' && '(оставьте пустым, чтобы не менять)'}</label>
-                <input className="form-input" type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} />
-              </div>
-              <div className="form-group">
-                <label>
-                  <input type="checkbox" checked={form.is_admin} onChange={e => setForm(f => ({ ...f, is_admin: e.target.checked }))} />
-                  {' '}Администратор
-                </label>
-              </div>
-              <div className="form-group">
-                <label>Роль</label>
-                <select
-                  className="form-input"
-                  value={form.role}
-                  onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
-                  disabled={form.is_admin}
-                >
-                  <option value="edit">Редактирование</option>
-                  <option value="view">Просмотр</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Доступные отделы</label>
-                {(departments || []).map(d => (
-                  <label key={d} style={{ display: 'block', fontWeight: 400, textTransform: 'none' }}>
-                    <input type="checkbox" checked={form.departments.includes(d)} onChange={() => toggleDept(d)} />
-                    {' '}{d}
-                  </label>
-                ))}
+              <div className="users-edit-grid">
+                <div className="users-edit-col">
+                  <div className="form-group">
+                    <label>Имя</label>
+                    <input className="form-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+                  </div>
+                  <div className="form-group">
+                    <label>Почта</label>
+                    <input className="form-input" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+                  </div>
+                  <div className="form-group">
+                    <label>Логин</label>
+                    <input className="form-input" value={form.login} onChange={e => setForm(f => ({ ...f, login: e.target.value }))} />
+                  </div>
+                  <div className="form-group">
+                    <label>Пароль {editingId !== 'new' && '(оставьте пустым, чтобы не менять)'}</label>
+                    <input className="form-input" type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} />
+                  </div>
+                  <div className="form-group">
+                    <label>
+                      <input type="checkbox" checked={form.is_admin} onChange={e => setForm(f => ({ ...f, is_admin: e.target.checked }))} />
+                      {' '}Администратор
+                    </label>
+                  </div>
+                  <div className="form-group">
+                    <label>Роль</label>
+                    <select
+                      className="form-input"
+                      value={form.role}
+                      onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
+                      disabled={form.is_admin}
+                    >
+                      <option value="edit">Редактирование</option>
+                      <option value="view">Просмотр</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="users-edit-col">
+                  <div className="form-group">
+                    <label>Доступные отделы</label>
+                    {(departments || []).map(d => (
+                      <label key={d} style={{ display: 'block', fontWeight: 400, textTransform: 'none' }}>
+                        <input type="checkbox" checked={form.departments.includes(d)} onChange={() => toggleDept(d)} />
+                        {' '}{d}
+                      </label>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               {error && <div className="upload-error-line">{error}</div>}
