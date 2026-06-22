@@ -2,26 +2,45 @@ import { useState, useEffect, useRef } from 'react';
 import { SHIFT_COLORS } from '../mockData';
 
 const SHIFT_OPTIONS = [
-  { value: 'Р', label: 'Р — Работает' },
-  { value: 'В', label: 'В — Выходной' },
-  { value: 'О', label: 'О — Отпуск' },
-  { value: 'Б', label: 'Б — Больничный' },
-  { value: 'С', label: 'С — Отсыпной' },
+  { value: '8',  label: '8 — Работает (8ч, график 5-2)' },
+  { value: '11', label: '11 — Работает (11ч, сменный график)' },
+  { value: 'В',  label: 'В — Выходной' },
+  { value: 'О',  label: 'О — Отпуск' },
+  { value: 'Б',  label: 'Б — Больничный' },
   { value: 'ДО', label: 'ДО — Отпуск за свой счёт' },
+  { value: 'П',  label: 'П — Прогул' },
+  { value: 'К',  label: 'К — Командировка' },
+  { value: 'Ф',  label: 'Ф — ФМС' },
+  { value: 'У',  label: 'У — Увольнение' },
+  { value: 'Д',  label: 'Д — Доп. смена' },
 ];
 
 const DAY_NAMES_FULL = ['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'];
 const MONTH_NAMES = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+
+function pad2(n) { return String(n).padStart(2, '0'); }
 
 export default function CellEditor({ cell, onSave, onClose }) {
   const [value, setValue] = useState(cell.value);
   const [comment, setComment] = useState(cell.comment);
   const dialogRef = useRef(null);
 
+  const daysInMonth = new Date(cell.year, cell.month, 0).getDate();
+  const minDateStr = `${cell.year}-${pad2(cell.month)}-${pad2(cell.day)}`;
+  const maxDateStr = `${cell.year}-${pad2(cell.month)}-${pad2(daysInMonth)}`;
+  const [endDate, setEndDate] = useState(minDateStr);
+
   useEffect(() => {
     setValue(cell.value);
     setComment(cell.comment);
+    setEndDate(minDateStr);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cell]);
+
+  function handleValueChange(v) {
+    setValue(v);
+    if (v === 'У') setEndDate(maxDateStr);
+  }
 
   useEffect(() => {
     const handleKey = (e) => { if (e.key === 'Escape') onClose(); };
@@ -35,9 +54,13 @@ export default function CellEditor({ cell, onSave, onClose }) {
   })();
 
   const shiftLabel = cell.shiftType === 'day' ? 'дневная смена' : 'ночная смена';
+  const endDay = Number(endDate.split('-')[2]);
 
   function handleSave() {
-    onSave({ empId: cell.empId, day: cell.day, shiftType: cell.shiftType, value, comment });
+    onSave({
+      empId: cell.empId, day: cell.day, endDay: Math.max(cell.day, endDay),
+      shiftType: cell.shiftType, value, comment,
+    });
     onClose();
   }
 
@@ -57,11 +80,29 @@ export default function CellEditor({ cell, onSave, onClose }) {
                 key={opt.value}
                 className={`shift-btn ${value === opt.value ? 'active' : ''}`}
                 style={value === opt.value ? { backgroundColor: SHIFT_COLORS[opt.value] || '#e9ecef' } : {}}
-                onClick={() => setValue(opt.value)}
+                onClick={() => handleValueChange(opt.value)}
               >
                 {opt.label}
               </button>
             ))}
+          </div>
+
+          <div className="filler-start-row">
+            <div className="filler-section-label">По (включительно)</div>
+            <input
+              type="date"
+              className="filler-date-input"
+              value={endDate}
+              min={minDateStr}
+              max={maxDateStr}
+              disabled={value === 'У'}
+              onChange={e => setEndDate(e.target.value)}
+            />
+            {endDay > cell.day && (
+              <div className="filler-legend-hint">
+                Статус будет проставлен с {cell.day} по {endDay} число включительно.
+              </div>
+            )}
           </div>
 
           <div className="comment-group">

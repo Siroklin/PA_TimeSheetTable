@@ -135,7 +135,7 @@ export default function ScheduleFiller({ employee, year, month, onApply, onClose
           {isDNOV && (
             <div className="filler-legend-hint">
               Верхняя ячейка — день, нижняя — ночь.
-              Цикл: <b>Д</b> (день) → <b>Н</b> (ночь) → <b>С</b> (отсыпной) → <b>В</b> (выходной)
+              Цикл: <b>11</b> (день) → <b>11</b> (ночь) → <b>В</b> (выходной) → <b>В</b> (выходной)
             </div>
           )}
         </div>

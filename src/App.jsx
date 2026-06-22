@@ -16,6 +16,7 @@ import {
   fetchPositions, savePattern, fetchDepartments,
   fetchMe, getToken, clearToken,
 } from './api';
+import { isWorkValue } from './mockData';
 import './App.css';
 
 export default function App() {
@@ -137,12 +138,12 @@ export default function App() {
     if (filters.shift === 'day') {
       result = result.filter(e => {
         const sched = scheduleMap[e.id] ?? scheduleMap[String(e.id)] ?? {};
-        return Object.values(sched).some(cell => cell.day === 'Р');
+        return Object.values(sched).some(cell => isWorkValue(cell.day));
       });
     } else if (filters.shift === 'night') {
       result = result.filter(e => {
         const sched = scheduleMap[e.id] ?? scheduleMap[String(e.id)] ?? {};
-        return Object.values(sched).some(cell => cell.nightShift === 'Р');
+        return Object.values(sched).some(cell => isWorkValue(cell.nightShift));
       });
     }
     return result;
@@ -160,19 +161,26 @@ export default function App() {
     });
   }
 
-  async function handleCellSave({ empId, day, shiftType, value, comment }) {
+  async function handleCellSave({ empId, day, endDay, shiftType, value, comment }) {
+    const lastDay = endDay && endDay > day ? endDay : day;
     const patch = shiftType === 'day'
       ? { day_status: value, day_comment: comment }
       : { night_status: value, night_comment: comment };
 
     setScheduleMap(prev => {
-      const empDay = { ...(prev[empId]?.[day] ?? {}) };
-      if (shiftType === 'day') { empDay.day = value; empDay.dayComment = comment; }
-      else { empDay.nightShift = value; empDay.nightComment = comment; }
-      return { ...prev, [empId]: { ...prev[empId], [day]: empDay } };
+      const empSched = { ...(prev[empId] ?? {}) };
+      for (let d = day; d <= lastDay; d++) {
+        const empDay = { ...(empSched[d] ?? {}) };
+        if (shiftType === 'day') { empDay.day = value; empDay.dayComment = comment; }
+        else { empDay.nightShift = value; empDay.nightComment = comment; }
+        empSched[d] = empDay;
+      }
+      return { ...prev, [empId]: empSched };
     });
 
-    await updateCell(empId, year, month, day, patch);
+    const calls = [];
+    for (let d = day; d <= lastDay; d++) calls.push(updateCell(empId, year, month, d, patch));
+    await Promise.all(calls);
   }
 
   async function handleFillApply(empId, updates, patternInfo) {
@@ -283,11 +291,17 @@ export default function App() {
       )}
 
       <div className="legend">
-        <div className="legend-item"><div className="legend-dot" style={{ background: '#d4edda' }} />Р — Работает (день)</div>
+        <div className="legend-item"><div className="legend-dot" style={{ background: '#d4edda' }} />8 — Работает (5-2, 8ч)</div>
+        <div className="legend-item"><div className="legend-dot" style={{ background: '#a8d8b9' }} />11 — Работает (смена, 11ч)</div>
         <div className="legend-item"><div className="legend-dot" style={{ background: '#fff3cd' }} />В — Выходной</div>
         <div className="legend-item"><div className="legend-dot" style={{ background: '#cce5ff' }} />О — Отпуск</div>
         <div className="legend-item"><div className="legend-dot" style={{ background: '#f8d7da' }} />Б — Больничный</div>
-        <div className="legend-item"><div className="legend-dot" style={{ background: '#e8d5f5' }} />С — Отсыпной</div>
+        <div className="legend-item"><div className="legend-dot" style={{ background: '#fde8c8' }} />ДО — Отпуск за свой счёт</div>
+        <div className="legend-item"><div className="legend-dot" style={{ background: '#ff8787' }} />П — Прогул</div>
+        <div className="legend-item"><div className="legend-dot" style={{ background: '#99e9f2' }} />К — Командировка</div>
+        <div className="legend-item"><div className="legend-dot" style={{ background: '#e8d5f5' }} />Ф — ФМС</div>
+        <div className="legend-item"><div className="legend-dot" style={{ background: '#ced4da' }} />У — Увольнение</div>
+        <div className="legend-item"><div className="legend-dot" style={{ background: '#ffd43b' }} />Д — Доп. смена</div>
         <div className="legend-item"><div className="legend-dot" style={{ background: '#c8c8c8', border: '1px solid #aaa' }} />Ночь (всегда серая)</div>
         <div className="legend-item"><span className="comment-dot-demo" />Комментарий</div>
       </div>

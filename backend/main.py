@@ -554,23 +554,23 @@ def _apply_pattern_py(pattern: str, year: int, month: int, shift: str | None, st
             else:
                 phase = diff % 4
                 if phase == 0:
-                    result[d] = {'day_status': 'Р', 'night_status': ''}
+                    result[d] = {'day_status': '11', 'night_status': ''}
                 elif phase == 1:
-                    result[d] = {'day_status': '', 'night_status': 'Р'}
+                    result[d] = {'day_status': '', 'night_status': '11'}
                 elif phase == 2:
-                    result[d] = {'day_status': 'С', 'night_status': ''}
+                    result[d] = {'day_status': 'В', 'night_status': ''}
                 else:
                     result[d] = {'day_status': 'В', 'night_status': ''}
         else:
             if pattern == '5-0':
-                val = 'Р' if 1 <= dow_js <= 5 else 'В'
+                val = '8' if 1 <= dow_js <= 5 else 'В'
             elif pattern == '6-1':
-                val = 'Р' if 1 <= dow_js <= 6 else 'В'
+                val = '11' if 1 <= dow_js <= 6 else 'В'
             elif pattern == '2x2':
                 if diff < 0:
                     val = ''
                 else:
-                    val = 'Р' if (diff % 4) < 2 else 'В'
+                    val = '11' if (diff % 4) < 2 else 'В'
             else:
                 val = ''
 
@@ -601,6 +601,19 @@ def copy_schedule(
 
     copied = 0
     for emp in employees:
+        dismissed = (
+            db.query(models.ScheduleEntry)
+            .filter(
+                models.ScheduleEntry.employee_id == emp.id,
+                models.ScheduleEntry.year == from_year,
+                models.ScheduleEntry.month == from_month,
+                (models.ScheduleEntry.day_status == 'У') | (models.ScheduleEntry.night_status == 'У'),
+            )
+            .first()
+        )
+        if dismissed:
+            continue
+
         pattern_rec = (
             db.query(models.SchedulePattern)
             .filter_by(employee_id=emp.id, year=from_year, month=from_month)

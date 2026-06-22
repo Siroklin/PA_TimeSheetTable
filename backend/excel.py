@@ -4,23 +4,33 @@ from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
 SHIFT_COLORS = {
-    'Р':  'D4EDDA',
+    '8':  'D4EDDA',
+    '11': 'A8D8B9',
     'В':  'FFF3CD',
     'О':  'CCE5FF',
     'Б':  'F8D7DA',
-    'С':  'E8D5F5',
     'ДО': 'FDE8C8',
+    'П':  'FF8787',
+    'К':  '99E9F2',
+    'Ф':  'E8D5F5',
+    'У':  'CED4DA',
+    'Д':  'FFD43B',
 }
 DAY_EMPTY = 'EBEBEB'
 NIGHT_EMPTY = 'C8C8C8'
 
 LEGEND = [
-    ('Р',   'D4EDDA', 'Работает'),
+    ('8',   'D4EDDA', 'Работает (5-2, 8ч)'),
+    ('11',  'A8D8B9', 'Работает (смена, 11ч)'),
     ('В',   'FFF3CD', 'Выходной'),
     ('О',   'CCE5FF', 'Отпуск'),
     ('Б',   'F8D7DA', 'Больничный'),
-    ('С',   'E8D5F5', 'Отсыпной'),
     ('ДО',  'FDE8C8', 'Отпуск за свой счёт'),
+    ('П',   'FF8787', 'Прогул'),
+    ('К',   '99E9F2', 'Командировка'),
+    ('Ф',   'E8D5F5', 'ФМС'),
+    ('У',   'CED4DA', 'Увольнение'),
+    ('Д',   'FFD43B', 'Доп. смена'),
 ]
 
 MONTH_NAMES = [
