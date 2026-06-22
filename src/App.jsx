@@ -9,6 +9,7 @@ import AddPosition from './components/AddPosition';
 import ManageDepartments from './components/ManageDepartments';
 import UsersAdmin from './components/UsersAdmin';
 import CopySchedule from './components/CopySchedule';
+import EmployeeStats from './components/EmployeeStats';
 import Login from './components/Login';
 import {
   fetchEmployees, fetchSchedule, updateCell, getExportUrl,
@@ -67,6 +68,7 @@ export default function App() {
   const [showManageDepartments, setShowManageDepartments] = useState(false);
   const [showManageUsers, setShowManageUsers]     = useState(false);
   const [showCopySchedule, setShowCopySchedule]   = useState(false);
+  const [showStats, setShowStats]                 = useState(false);
 
   const { year, month } = period;
 
@@ -265,6 +267,7 @@ export default function App() {
         onManageDepartments={() => setShowManageDepartments(true)}
         onManageUsers={() => setShowManageUsers(true)}
         onCopySchedule={() => setShowCopySchedule(true)}
+        onShowStats={() => setShowStats(true)}
         onLogout={handleLogout}
       />
 
@@ -364,6 +367,15 @@ export default function App() {
           fromMonth={month}
           onSuccess={handleCopySuccess}
           onClose={() => setShowCopySchedule(false)}
+        />
+      )}
+      {showStats && (
+        <EmployeeStats
+          employees={visibleEmployees}
+          schedule={scheduleMap}
+          year={year}
+          month={month}
+          onClose={() => setShowStats(false)}
         />
       )}
     </div>
