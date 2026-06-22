@@ -69,7 +69,7 @@ export default function CellEditor({ cell, onSave, onClose }) {
 
   function handleSave() {
     const codeStr = code === WORK ? '' : code;
-    const h = Number(hours) || 0;
+    const h = code === 'У' ? 0 : (Number(hours) || 0);
     const value = h > 0 ? `${codeStr}${h}` : codeStr;
     onSave({
       empId: cell.empId, day: cell.day, endDay: Math.max(cell.day, endDay),
@@ -124,17 +124,19 @@ export default function CellEditor({ cell, onSave, onClose }) {
             ))}
           </div>
 
-          <div className="comment-group">
-            <label>Часы работы</label>
-            <input
-              type="number"
-              className="comment-input"
-              min={0}
-              max={24}
-              value={hours}
-              onChange={e => setHours(e.target.value)}
-            />
-          </div>
+          {code !== 'У' && (
+            <div className="comment-group">
+              <label>Часы работы</label>
+              <input
+                type="number"
+                className="comment-input"
+                min={0}
+                max={24}
+                value={hours}
+                onChange={e => setHours(e.target.value)}
+              />
+            </div>
+          )}
 
           <div className="filler-start-row">
             <div className="filler-section-label">По (включительно)</div>
