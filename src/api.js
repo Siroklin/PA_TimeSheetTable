@@ -180,6 +180,10 @@ export function savePattern(employeeId, year, month, { pattern, shift, startDate
   });
 }
 
+export function fetchPattern(employeeId, year, month) {
+  return apiFetch(`/api/schedule-patterns/${employeeId}?year=${year}&month=${month}`);
+}
+
 // ── Copy schedule ─────────────────────────────────────────────────────────────
 
 export function copySchedule(department, fromYear, fromMonth, toYear, toMonth) {

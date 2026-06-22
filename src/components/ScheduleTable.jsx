@@ -1,4 +1,4 @@
-import { getCellColor } from '../mockData';
+import { getCellColor, splitCode, SHIFT_COLORS } from '../mockData';
 
 const DAY_NAMES = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
 
@@ -12,7 +12,7 @@ function isWeekend(year, month, day) {
 }
 
 export default function ScheduleTable({
-  employees, schedule, shifts = {}, year, month, readOnly = false,
+  employees, schedule, year, month, readOnly = false,
   onCellClick, onFillClick, onDeleteEmployee, onEditEmployee,
 }) {
   const daysInMonth = new Date(year, month, 0).getDate();
@@ -39,7 +39,6 @@ export default function ScheduleTable({
         </thead>
         <tbody>
           {employees.map((emp, idx) => {
-            const empShift = shifts[emp.id] ?? shifts[String(emp.id)] ?? null;
             return (
               <tr key={emp.id} className={idx % 2 === 0 ? 'row-even' : 'row-odd'}>
                 <td className="col-name">
@@ -49,12 +48,6 @@ export default function ScheduleTable({
                       <span className="emp-position" title={emp.position}>({emp.position})</span>
                     </div>
                     <div className="emp-actions">
-                      <span
-                        className={`shift-badge ${empShift === 'night' ? 'shift-badge-night' : 'shift-badge-day'}`}
-                        title={empShift === 'night' ? 'Ночная смена' : 'Дневная смена'}
-                      >
-                        {empShift === 'night' ? 'Н' : 'Д'}
-                      </span>
                       {!readOnly && (
                         <button
                           className="btn-fill-schedule"
@@ -119,11 +112,14 @@ function ShiftHeaders() {
 }
 
 function DayCells({ dayVal, nightVal, dayComment, nightComment, isWeekend, onDayClick, onNightClick }) {
+  const isTerminated = splitCode(dayVal).code === 'У' || splitCode(nightVal).code === 'У';
+  const dayColor = isTerminated ? SHIFT_COLORS['У'] : getCellColor(dayVal, false);
+  const nightColor = isTerminated ? SHIFT_COLORS['У'] : getCellColor(nightVal, true);
   return (
     <>
       <td
         className={`cell cell-day ${isWeekend ? 'cell-weekend' : ''}`}
-        style={{ backgroundColor: getCellColor(dayVal, false) }}
+        style={{ backgroundColor: dayColor }}
         onClick={onDayClick}
         title={dayComment || undefined}
       >
@@ -132,7 +128,7 @@ function DayCells({ dayVal, nightVal, dayComment, nightComment, isWeekend, onDay
       </td>
       <td
         className="cell cell-night"
-        style={{ backgroundColor: getCellColor(nightVal, true) }}
+        style={{ backgroundColor: nightColor }}
         onClick={onNightClick}
         title={nightComment || undefined}
       >

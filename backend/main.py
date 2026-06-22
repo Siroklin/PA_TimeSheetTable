@@ -509,6 +509,22 @@ def delete_position(
 
 # ── Schedule patterns ─────────────────────────────────────────────────────────
 
+@app.get("/api/schedule-patterns/{employee_id}")
+def get_schedule_pattern(
+    employee_id: int, year: int, month: int, db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    check_employee_access(current_user, employee_id, db)
+    rec = db.query(models.SchedulePattern).filter_by(
+        employee_id=employee_id, year=year, month=month
+    ).first()
+    if not rec:
+        return None
+    return {
+        "pattern": rec.pattern, "shift": rec.shift, "start_date": rec.start_date,
+    }
+
+
 @app.post("/api/schedule-patterns")
 def save_schedule_pattern(
     body: schemas.SchedulePatternSave, db: Session = Depends(get_db),

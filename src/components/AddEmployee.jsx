@@ -68,22 +68,16 @@ export default function AddEmployee({ department, positions, employee, onSuccess
 
           <div className="form-group">
             <label>Должность <span className="req">*</span></label>
-            {positions && positions.length > 0 ? (
-              <select
-                className="form-input"
-                value={form.position}
-                onChange={e => set('position', e.target.value)}
-              >
-                {positions.map(p => <option key={p.id} value={p.position}>{p.position}</option>)}
-              </select>
-            ) : (
-              <input
-                className="form-input"
-                value={form.position}
-                onChange={e => set('position', e.target.value)}
-                placeholder="Введите должность"
-              />
-            )}
+            <select
+              className="form-input"
+              value={form.position}
+              onChange={e => set('position', e.target.value)}
+              disabled={!positions || positions.length === 0}
+            >
+              {positions && positions.length > 0
+                ? positions.map(p => <option key={p.id} value={p.position}>{p.position}</option>)
+                : <option value="">— нет должностей —</option>}
+            </select>
           </div>
 
           {!positions || positions.length === 0 ? (

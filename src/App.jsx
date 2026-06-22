@@ -290,7 +290,6 @@ export default function App() {
       )}
 
       <div className="legend">
-        <div className="legend-item"><div className="legend-dot" style={{ background: '#d4edda' }} />Число — Работает (часы по графику)</div>
         <div className="legend-item"><div className="legend-dot" style={{ background: '#fff3cd' }} />В — Выходной</div>
         <div className="legend-item"><div className="legend-dot" style={{ background: '#cce5ff' }} />О — Отпуск</div>
         <div className="legend-item"><div className="legend-dot" style={{ background: '#f8d7da' }} />Б — Больничный</div>
@@ -298,9 +297,8 @@ export default function App() {
         <div className="legend-item"><div className="legend-dot" style={{ background: '#ff8787' }} />П — Прогул</div>
         <div className="legend-item"><div className="legend-dot" style={{ background: '#99e9f2' }} />К — Командировка</div>
         <div className="legend-item"><div className="legend-dot" style={{ background: '#e8d5f5' }} />Ф — ФМС</div>
-        <div className="legend-item"><div className="legend-dot" style={{ background: '#ced4da' }} />У — Увольнение</div>
+        <div className="legend-item"><div className="legend-dot" style={{ background: '#ff4d4f' }} />У — Увольнение</div>
         <div className="legend-item"><div className="legend-dot" style={{ background: '#ffd43b' }} />Д — Доп. смена</div>
-        <div className="legend-item"><div className="legend-dot" style={{ background: '#c8c8c8', border: '1px solid #aaa' }} />Ночь (всегда серая)</div>
         <div className="legend-item"><span className="comment-dot-demo" />Комментарий</div>
       </div>
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { SHIFT_COLORS, WORK_COLOR, splitCode } from '../mockData';
+import { SHIFT_COLORS, WORK_COLOR, splitCode, applyPattern } from '../mockData';
+import { fetchPattern } from '../api';
 
 const WORK = 'WORK'; // sentinel for "code is blank, cell is pure work hours"
 
@@ -30,6 +31,7 @@ export default function CellEditor({ cell, onSave, onClose }) {
   const [code, setCode] = useState(initial.code === '' ? WORK : initial.code);
   const [hours, setHours] = useState(initial.hours ?? 8);
   const [comment, setComment] = useState(cell.comment);
+  const [deleting, setDeleting] = useState(false);
   const dialogRef = useRef(null);
 
   const daysInMonth = new Date(cell.year, cell.month, 0).getDate();
@@ -76,6 +78,29 @@ export default function CellEditor({ cell, onSave, onClose }) {
     onClose();
   }
 
+  async function handleDeleteAbsence() {
+    setDeleting(true);
+    try {
+      const rec = await fetchPattern(cell.empId, cell.year, cell.month).catch(() => null);
+      let value = '';
+      if (rec) {
+        const startDate = new Date(rec.start_date + 'T00:00:00');
+        const updates = applyPattern(rec.pattern, cell.year, cell.month, { shift: rec.shift, startDate });
+        const dayUpdate = updates[cell.day];
+        if (dayUpdate) {
+          value = cell.shiftType === 'day' ? (dayUpdate.day ?? '') : (dayUpdate.nightShift ?? '');
+        }
+      }
+      onSave({
+        empId: cell.empId, day: cell.day, endDay: cell.day,
+        shiftType: cell.shiftType, value, comment: '',
+      });
+      onClose();
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
     <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="modal" ref={dialogRef}>
@@ -91,7 +116,7 @@ export default function CellEditor({ cell, onSave, onClose }) {
               <button
                 key={opt.value}
                 className={`shift-btn ${code === opt.value ? 'active' : ''}`}
-                style={code === opt.value ? { backgroundColor: codeColor(opt.value) } : {}}
+                style={{ backgroundColor: codeColor(opt.value) }}
                 onClick={() => handleCodeChange(opt.value)}
               >
                 {opt.label}
@@ -142,6 +167,9 @@ export default function CellEditor({ cell, onSave, onClose }) {
         </div>
 
         <div className="modal-footer">
+          <button className="btn-cancel" onClick={handleDeleteAbsence} disabled={deleting}>
+            {deleting ? 'Удаление...' : 'Удалить отсутствие'}
+          </button>
           <button className="btn-cancel" onClick={onClose}>Отмена</button>
           <button className="btn-save" onClick={handleSave}>Сохранить</button>
         </div>

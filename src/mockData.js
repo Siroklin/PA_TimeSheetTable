@@ -10,7 +10,7 @@ export const SHIFT_COLORS = {
   'П':  '#ff8787', // красный — прогул
   'К':  '#99e9f2', // голубой — командировка
   'Ф':  '#e8d5f5', // фиолетовый — ФМС
-  'У':  '#ced4da', // серый — увольнение
+  'У':  '#ff4d4f', // красный — увольнение
   'Д':  '#ffd43b', // золотой — дополнительная смена
 };
 
@@ -36,11 +36,11 @@ export const DAY_EMPTY_COLOR   = '#ebebeb';
 export const NIGHT_EMPTY_COLOR = '#c8c8c8';
 
 export function getCellColor(value, isNight) {
-  if (isNight) return NIGHT_EMPTY_COLOR;          // ночь всегда серая
-  if (!value) return DAY_EMPTY_COLOR;
+  const emptyColor = isNight ? NIGHT_EMPTY_COLOR : DAY_EMPTY_COLOR;
+  if (!value) return emptyColor;
   const { code } = splitCode(value);
   if (code === '') return WORK_COLOR;             // чистое число часов — работает
-  return SHIFT_COLORS[code] ?? DAY_EMPTY_COLOR;
+  return SHIFT_COLORS[code] ?? emptyColor;
 }
 
 export function generateSchedule(employeeList, year, month) {
