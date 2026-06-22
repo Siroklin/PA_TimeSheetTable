@@ -13,7 +13,7 @@ SHIFT_COLORS = {
     'П':  'FF8787',
     'К':  '99E9F2',
     'Ф':  'E8D5F5',
-    'У':  'CED4DA',
+    'У':  'FF4D4F',
     'Д':  'FFD43B',
 }
 DAY_EMPTY = 'EBEBEB'
@@ -28,11 +28,18 @@ LEGEND = [
     ('П',   'FF8787', 'Прогул'),
     ('К',   '99E9F2', 'Командировка'),
     ('Ф',   'E8D5F5', 'ФМС'),
-    ('У',   'CED4DA', 'Увольнение'),
+    ('У',   'FF4D4F', 'Увольнение'),
     ('Д',   'FFD43B', 'Доп. смена'),
 ]
 
 _CODE_RE = re.compile(r'^(\D*)(\d+)?$')
+
+
+def _code_of(value: str) -> str:
+    if not value:
+        return ''
+    m = _CODE_RE.match(value)
+    return (m.group(1) if m else value) or ''
 
 
 def _cell_color(value: str, empty: str) -> str:
@@ -40,8 +47,7 @@ def _cell_color(value: str, empty: str) -> str:
     returns the matching fill color (work hours have no letter prefix)."""
     if not value:
         return empty
-    m = _CODE_RE.match(value)
-    code = m.group(1) if m else value
+    code = _code_of(value)
     if code == '':
         return WORK_COLOR
     return SHIFT_COLORS.get(code, empty)
@@ -123,14 +129,16 @@ def generate_excel(employees, schedule_map: dict, year: int, month: int, departm
             cell_data = emp_sched.get(d) or emp_sched.get(str(d)) or {}
             day_val = cell_data.get('day') or ''
             night_val = cell_data.get('nightShift') or ''
+            is_terminated = _code_of(day_val) == 'У' or _code_of(night_val) == 'У'
+            terminated_color = SHIFT_COLORS['У']
 
             c_d = ws.cell(row=row, column=col_d, value=day_val)
-            c_d.fill = _fill(_cell_color(day_val, DAY_EMPTY))
+            c_d.fill = _fill(terminated_color if is_terminated else _cell_color(day_val, DAY_EMPTY))
             c_d.alignment = Alignment(horizontal='center', vertical='center')
             c_d.font = Font(size=9)
 
             c_n = ws.cell(row=row, column=col_d + 1, value=night_val)
-            c_n.fill = _fill(_cell_color(night_val, NIGHT_EMPTY))
+            c_n.fill = _fill(terminated_color if is_terminated else _cell_color(night_val, NIGHT_EMPTY))
             c_n.alignment = Alignment(horizontal='center', vertical='center')
             c_n.font = Font(size=9)
 
