@@ -1,6 +1,7 @@
 import calendar
 import io
 import os
+import re
 from datetime import date, timedelta
 from urllib.parse import quote
 
@@ -333,6 +334,57 @@ def delete_employee(
 
 # ── Schedule ──────────────────────────────────────────────────────────────────
 
+_CODE_RE = re.compile(r"^(\D*)(\d+)?$")
+
+
+def _is_work_value(value: str | None) -> bool:
+    """Mirrors mockData.js isWorkValue: a cell counts as "working" when its
+    value is plain hours with no letter status code (e.g. "8", "11")."""
+    if not value:
+        return False
+    m = _CODE_RE.match(value)
+    code = (m.group(1) if m else value) or ""
+    return code == ""
+
+
+def _check_no_cross_department_conflict(
+    db: Session, emp: models.Employee, year: int, month: int, day: int,
+    day_status: str, night_status: str,
+):
+    """An employee (matched by personnel code) can't be scheduled to work in
+    two departments on the same calendar day."""
+    if not (_is_work_value(day_status) or _is_work_value(night_status)):
+        return
+    other_emps = {
+        e.id: e for e in db.query(models.Employee).filter(
+            models.Employee.code == emp.code,
+            models.Employee.department != emp.department,
+        ).all()
+    }
+    if not other_emps:
+        return
+    conflicts = (
+        db.query(models.ScheduleEntry)
+        .filter(
+            models.ScheduleEntry.employee_id.in_(other_emps.keys()),
+            models.ScheduleEntry.year == year,
+            models.ScheduleEntry.month == month,
+            models.ScheduleEntry.day == day,
+        )
+        .all()
+    )
+    for c in conflicts:
+        if _is_work_value(c.day_status) or _is_work_value(c.night_status):
+            other_dept = other_emps[c.employee_id].department
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Сотрудник с кодом {emp.code} уже работает {day:02d}.{month:02d}.{year} "
+                    f"в отделе «{other_dept}»"
+                ),
+            )
+
+
 @app.get("/api/schedule")
 def get_schedule(
     department: str = Query(...),
@@ -379,7 +431,7 @@ def update_cell(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_can_edit),
 ):
-    check_employee_access(current_user, emp_id, db)
+    emp = check_employee_access(current_user, emp_id, db)
     entry = (
         db.query(models.ScheduleEntry)
         .filter_by(employee_id=emp_id, year=year, month=month, day=day)
@@ -392,6 +444,11 @@ def update_cell(
             day_status="", night_status="", day_comment="", night_comment="",
         )
         db.add(entry)
+
+    new_day_status = cell.day_status if cell.day_status is not None else entry.day_status
+    new_night_status = cell.night_status if cell.night_status is not None else entry.night_status
+    if cell.day_status is not None or cell.night_status is not None:
+        _check_no_cross_department_conflict(db, emp, year, month, day, new_day_status, new_night_status)
 
     if cell.day_status is not None:
         entry.day_status = cell.day_status

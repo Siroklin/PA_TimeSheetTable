@@ -14,8 +14,11 @@ const MONTH_NAMES = ['январь','февраль','март','апрель','
 function buildPreview(pattern, year, month, startDate, shift) {
   const updates = applyPattern(pattern, year, month, { startDate, shift });
   const daysInMonth = new Date(year, month, 0).getDate();
-  return Array.from({ length: Math.min(14, daysInMonth) }, (_, i) => {
-    const d = i + 1;
+  const sameMonth = startDate.getFullYear() === year && startDate.getMonth() === month - 1;
+  const startDay = sameMonth ? startDate.getDate() : 1;
+  const count = Math.max(0, Math.min(14, daysInMonth - startDay + 1));
+  return Array.from({ length: count }, (_, i) => {
+    const d = startDay + i;
     const dow = new Date(year, month - 1, d).getDay();
     const u = updates[d] ?? {};
     return { d, dow, day: u.day ?? '', night: u.nightShift ?? '' };

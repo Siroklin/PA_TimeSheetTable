@@ -182,7 +182,12 @@ export default function App() {
 
     const calls = [];
     for (let d = day; d <= lastDay; d++) calls.push(updateCell(empId, year, month, d, patch));
-    await Promise.all(calls);
+    try {
+      await Promise.all(calls);
+    } catch (err) {
+      alert(err.message || 'Не удалось сохранить изменения.');
+      loadData();
+    }
   }
 
   async function handleFillApply(empId, updates, patternInfo) {
@@ -221,7 +226,12 @@ export default function App() {
         if (shift)             patch.shift        = shift;
         return updateCell(empId, year, month, Number(d), patch);
       });
-    await Promise.all(calls);
+    try {
+      await Promise.all(calls);
+    } catch (err) {
+      alert(err.message || 'Не удалось сохранить изменения.');
+      loadData();
+    }
   }
 
   async function handleDeleteEmployee(empId) {
@@ -302,6 +312,7 @@ export default function App() {
         <div className="legend-item"><div className="legend-dot" style={{ background: '#e8d5f5' }} />Ф — ФМС</div>
         <div className="legend-item"><div className="legend-dot" style={{ background: '#ff4d4f' }} />У — Увольнение</div>
         <div className="legend-item"><div className="legend-dot" style={{ background: '#ffd43b' }} />Д — Доп. смена</div>
+        <div className="legend-item"><div className="legend-dot" style={{ background: '#ffa94d' }} />С — Сверхурочные</div>
         <div className="legend-item"><span className="comment-dot-demo" />Комментарий</div>
       </div>
 

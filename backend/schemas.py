@@ -1,5 +1,11 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Literal, Optional
+
+
+def _no_spaces(value: Optional[str]) -> Optional[str]:
+    if value and any(c.isspace() for c in value):
+        raise ValueError("Код сотрудника не должен содержать пробелы")
+    return value
 
 
 class DepartmentCreate(BaseModel):
@@ -58,6 +64,8 @@ class EmployeeCreate(BaseModel):
     position: str
     department: str
 
+    _validate_code = field_validator("code")(_no_spaces)
+
 
 class Employee(EmployeeCreate):
     id: int
@@ -70,6 +78,8 @@ class EmployeeUpdate(BaseModel):
     code: Optional[str] = None
     name: Optional[str] = None
     position: Optional[str] = None
+
+    _validate_code = field_validator("code")(_no_spaces)
 
 
 class CellUpdate(BaseModel):

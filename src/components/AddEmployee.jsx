@@ -34,7 +34,8 @@ export default function AddEmployee({ department, positions, employee, onSuccess
     }
   }
 
-  const canSave = form.code.trim() && form.name.trim() && form.position.trim();
+  const codeHasSpace = /\s/.test(form.code);
+  const canSave = form.code.trim() && !codeHasSpace && form.name.trim() && form.position.trim();
 
   return (
     <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
@@ -54,6 +55,9 @@ export default function AddEmployee({ department, positions, employee, onSuccess
               onChange={e => set('code', e.target.value)}
               placeholder="001"
             />
+            {codeHasSpace && (
+              <div className="field-error">Код не должен содержать пробелы</div>
+            )}
           </div>
 
           <div className="form-group">

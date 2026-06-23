@@ -15,6 +15,7 @@ SHIFT_COLORS = {
     'Ф':  'E8D5F5',
     'У':  'FF4D4F',
     'Д':  'FFD43B',
+    'С':  'FFA94D',
 }
 DAY_EMPTY = 'EBEBEB'
 NIGHT_EMPTY = 'C8C8C8'
@@ -30,6 +31,7 @@ LEGEND = [
     ('Ф',   'E8D5F5', 'ФМС'),
     ('У',   'FF4D4F', 'Увольнение'),
     ('Д',   'FFD43B', 'Доп. смена'),
+    ('С',   'FFA94D', 'Сверхурочные'),
 ]
 
 _CODE_RE = re.compile(r'^(\D*)(\d+)?$')

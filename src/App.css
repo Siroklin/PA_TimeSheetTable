@@ -334,6 +334,7 @@ body {
 .form-input:focus { border-color: #1a3c5e; background: #fff; }
 
 .req { color: #e53935; }
+.field-error { color: #e53935; font-size: 0.82rem; margin-top: 4px; }
 
 /* Table */
 .table-container {
