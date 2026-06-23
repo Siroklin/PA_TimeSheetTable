@@ -16,6 +16,7 @@ class User(Base):
     email         = Column(String(200), nullable=False, default="")
     login         = Column(String(100), nullable=False, unique=True, index=True)
     password_hash = Column(String(200), nullable=False)
+    ldap          = Column(String(200), nullable=False, default="")
     is_admin      = Column(Boolean, nullable=False, default=False)
     role          = Column(String(20), nullable=False, default="edit")  # 'edit' | 'view'
 

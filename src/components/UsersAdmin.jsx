@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchUsers, createUser, updateUser, deleteUser } from '../api';
 
-const EMPTY_FORM = { name: '', email: '', login: '', password: '', is_admin: false, role: 'edit', departments: [] };
+const EMPTY_FORM = { name: '', email: '', login: '', ldap: '', password: '', is_admin: false, role: 'edit', departments: [] };
 
 export default function UsersAdmin({ departments, currentUserId, onClose }) {
   const [users, setUsers]     = useState([]);
@@ -22,7 +22,7 @@ export default function UsersAdmin({ departments, currentUserId, onClose }) {
 
   function startEdit(u) {
     setEditingId(u.id);
-    setForm({ name: u.name, email: u.email, login: u.login, password: '', is_admin: u.is_admin, role: u.role, departments: u.departments });
+    setForm({ name: u.name, email: u.email, login: u.login, ldap: u.ldap || '', password: '', is_admin: u.is_admin, role: u.role, departments: u.departments });
     setError(null);
   }
 
@@ -49,18 +49,18 @@ export default function UsersAdmin({ departments, currentUserId, onClose }) {
 
   async function handleSave() {
     if (!form.name.trim() || !form.login.trim()) return;
-    if (editingId === 'new' && !form.password) return;
+    if (editingId === 'new' && !form.password && !form.ldap.trim()) return;
     setSaving(true);
     setError(null);
     try {
       if (editingId === 'new') {
         await createUser({
-          name: form.name.trim(), email: form.email.trim(), login: form.login.trim(),
+          name: form.name.trim(), email: form.email.trim(), login: form.login.trim(), ldap: form.ldap.trim(),
           password: form.password, is_admin: form.is_admin, role: form.role, departments: form.departments,
         });
       } else {
         const patch = {
-          name: form.name.trim(), email: form.email.trim(), login: form.login.trim(),
+          name: form.name.trim(), email: form.email.trim(), login: form.login.trim(), ldap: form.ldap.trim(),
           is_admin: form.is_admin, role: form.role, departments: form.departments,
         };
         if (form.password) patch.password = form.password;
@@ -105,6 +105,7 @@ export default function UsersAdmin({ departments, currentUserId, onClose }) {
                       {u.login} — {u.name} {u.is_admin
                         ? '(админ)'
                         : `(${u.role === 'view' ? 'просмотр' : 'редактирование'}: ${u.departments.join(', ') || 'без отделов'})`}
+                      {u.ldap && ' [LDAP]'}
                     </span>
                     <span>
                       <button className="btn-delete-pos" onClick={() => startEdit(u)} title="Редактировать">✎</button>
@@ -134,7 +135,15 @@ export default function UsersAdmin({ departments, currentUserId, onClose }) {
                     <input className="form-input" value={form.login} onChange={e => setForm(f => ({ ...f, login: e.target.value }))} />
                   </div>
                   <div className="form-group">
-                    <label>Пароль {editingId !== 'new' && '(оставьте пустым, чтобы не менять)'}</label>
+                    <label>LDAP (UPN/DN, необязательно)</label>
+                    <input className="form-input" value={form.ldap} onChange={e => setForm(f => ({ ...f, ldap: e.target.value }))} />
+                  </div>
+                  <div className="form-group">
+                    <label>
+                      Пароль {editingId !== 'new'
+                        ? '(оставьте пустым, чтобы не менять)'
+                        : form.ldap.trim() && '(не нужен — вход через LDAP)'}
+                    </label>
                     <input className="form-input" type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} />
                   </div>
                   <div className="form-group">

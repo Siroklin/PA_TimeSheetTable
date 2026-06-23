@@ -6,6 +6,8 @@ import secrets
 import time
 
 from fastapi import Depends, Header, HTTPException, Query
+from ldap3 import Server, Connection
+from ldap3.core.exceptions import LDAPException
 from sqlalchemy.orm import Session
 
 from .database import SessionLocal
@@ -15,6 +17,22 @@ SECRET_KEY = os.getenv("SECRET_KEY", "dev-insecure-secret-change-me")
 TOKEN_TTL_SECONDS = 60 * 60 * 24
 
 PBKDF2_ITERATIONS = 100_000
+
+LDAP_SERVER = os.getenv("LDAP_SERVER")  # e.g. "ldap://dc.example.local:389"
+
+
+def ldap_authenticate(bind_dn: str, password: str) -> bool:
+    """Verify credentials with a simple bind against LDAP_SERVER.
+    bind_dn is the value stored in User.ldap (a UPN or full DN)."""
+    if not LDAP_SERVER or not password:
+        return False
+    try:
+        server = Server(LDAP_SERVER)
+        conn = Connection(server, user=bind_dn, password=password, auto_bind=True)
+        conn.unbind()
+        return True
+    except LDAPException:
+        return False
 
 
 def hash_password(password: str) -> str:

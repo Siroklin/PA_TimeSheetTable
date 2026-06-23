@@ -17,7 +17,7 @@ from . import models
 from . import schemas
 from .excel import generate_excel
 from .auth import (
-    hash_password, verify_password, create_token,
+    hash_password, verify_password, create_token, ldap_authenticate,
     get_current_user, require_admin, require_can_edit,
     check_department_access, check_employee_access,
 )
@@ -34,6 +34,11 @@ def _migrate_add_user_role_column():
         with engine.begin() as conn:
             conn.execute(text(
                 "ALTER TABLE users ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'edit'"
+            ))
+    if "ldap" not in columns:
+        with engine.begin() as conn:
+            conn.execute(text(
+                "ALTER TABLE users ADD COLUMN ldap VARCHAR(200) NOT NULL DEFAULT ''"
             ))
 
 
@@ -101,7 +106,7 @@ def _user_out(db: Session, u: models.User) -> schemas.User:
         .order_by(models.UserDepartment.department).all()
     ]
     return schemas.User(
-        id=u.id, name=u.name, email=u.email, login=u.login,
+        id=u.id, name=u.name, email=u.email, login=u.login, ldap=u.ldap,
         is_admin=u.is_admin, role=u.role, departments=depts,
     )
 
@@ -111,7 +116,13 @@ def _user_out(db: Session, u: models.User) -> schemas.User:
 @app.post("/api/auth/login", response_model=schemas.LoginResponse)
 def login(body: schemas.LoginRequest, db: Session = Depends(get_db)):
     user = db.query(models.User).filter_by(login=body.login).first()
-    if not user or not verify_password(body.password, user.password_hash):
+    if not user:
+        raise HTTPException(status_code=401, detail="Неверный логин или пароль")
+    if user.ldap:
+        authenticated = ldap_authenticate(user.ldap, body.password)
+    else:
+        authenticated = verify_password(body.password, user.password_hash)
+    if not authenticated:
         raise HTTPException(status_code=401, detail="Неверный логин или пароль")
     token = create_token(user.id)
     return schemas.LoginResponse(token=token, user=_user_out(db, user))
@@ -134,9 +145,9 @@ def create_user(body: schemas.UserCreate, _: models.User = Depends(require_admin
     if db.query(models.User).filter_by(login=body.login).first():
         raise HTTPException(status_code=409, detail="Такой логин уже существует")
     u = models.User(
-        name=body.name, email=body.email, login=body.login,
-        password_hash=hash_password(body.password), is_admin=body.is_admin,
-        role=body.role,
+        name=body.name, email=body.email, login=body.login, ldap=body.ldap,
+        password_hash=hash_password(body.password) if body.password else "",
+        is_admin=body.is_admin, role=body.role,
     )
     db.add(u)
     db.commit()
@@ -163,6 +174,8 @@ def update_user(
         u.name = body.name
     if body.email is not None:
         u.email = body.email
+    if body.ldap is not None:
+        u.ldap = body.ldap
     if body.is_admin is not None:
         u.is_admin = body.is_admin
     if body.role is not None:

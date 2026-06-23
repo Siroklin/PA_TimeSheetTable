@@ -26,19 +26,28 @@ class UserBase(BaseModel):
     name: str
     email: str = ""
     login: str
+    ldap: str = ""
     is_admin: bool = False
     role: Literal["edit", "view"] = "edit"
 
 
 class UserCreate(UserBase):
-    password: str
+    password: Optional[str] = None
     departments: list[str] = []
+
+    @field_validator("password")
+    @classmethod
+    def _password_required_without_ldap(cls, value, info):
+        if not value and not info.data.get("ldap"):
+            raise ValueError("Укажите пароль или LDAP")
+        return value
 
 
 class UserUpdate(BaseModel):
     name: Optional[str] = None
     email: Optional[str] = None
     login: Optional[str] = None
+    ldap: Optional[str] = None
     password: Optional[str] = None
     is_admin: Optional[bool] = None
     role: Optional[Literal["edit", "view"]] = None
