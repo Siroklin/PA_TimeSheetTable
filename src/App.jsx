@@ -17,7 +17,7 @@ import {
   fetchPositions, savePattern, fetchDepartments,
   fetchMe, getToken, clearToken,
 } from './api';
-import { isWorkValue } from './mockData';
+import { isWorkValue, splitCode } from './mockData';
 import './App.css';
 
 export default function App() {
@@ -165,15 +165,23 @@ export default function App() {
 
   async function handleCellSave({ empId, day, endDay, shiftType, value, comment }) {
     const lastDay = endDay && endDay > day ? endDay : day;
-    const patch = shiftType === 'day'
-      ? { day_status: value, day_comment: comment }
-      : { night_status: value, night_comment: comment };
+    // Отпуск проставляется сразу на день и на ночь, независимо от того,
+    // в какой колонке открыли редактор.
+    const isVacation = splitCode(value).code === 'О';
+    const patch = isVacation
+      ? { day_status: value, day_comment: comment, night_status: value, night_comment: comment }
+      : shiftType === 'day'
+        ? { day_status: value, day_comment: comment }
+        : { night_status: value, night_comment: comment };
 
     setScheduleMap(prev => {
       const empSched = { ...(prev[empId] ?? {}) };
       for (let d = day; d <= lastDay; d++) {
         const empDay = { ...(empSched[d] ?? {}) };
-        if (shiftType === 'day') { empDay.day = value; empDay.dayComment = comment; }
+        if (isVacation) {
+          empDay.day = value; empDay.dayComment = comment;
+          empDay.nightShift = value; empDay.nightComment = comment;
+        } else if (shiftType === 'day') { empDay.day = value; empDay.dayComment = comment; }
         else { empDay.nightShift = value; empDay.nightComment = comment; }
         empSched[d] = empDay;
       }

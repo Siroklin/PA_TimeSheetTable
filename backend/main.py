@@ -2,6 +2,7 @@ import calendar
 import io
 import os
 import re
+from collections import Counter
 from datetime import date, timedelta
 from urllib.parse import quote
 
@@ -616,6 +617,53 @@ def save_schedule_pattern(
 
 # ── Copy schedule ─────────────────────────────────────────────────────────────
 
+# Реальные отсутствия — не переносятся при копировании месяца, вместо них
+# подставляются обычные рабочие часы по графику. Выходной (В), доп. смена (Д),
+# сверхурочные (С) и увольнение (У) — это часть графика/работы, а не отсутствие,
+# поэтому переносятся как есть (увольнение отдельно отфильтровывает сотрудника целиком).
+_ABSENCE_CODES = {'О', 'Б', 'ДО', 'П', 'К', 'Ф'}
+
+_STATUS_CODE_RE = re.compile(r'^(\D*)(\d+)?$')
+
+
+def _status_code(value: str | None) -> str:
+    if not value:
+        return ''
+    m = _STATUS_CODE_RE.match(value)
+    return m.group(1) if m else value
+
+
+def _replace_absences_with_work(src_entries: list) -> dict:
+    """
+    Returns {day: (day_status, night_status)} where any day/night status coded
+    as a real absence is replaced by the most common non-absence value for
+    that weekday (so the employee's usual working pattern is restored instead
+    of carrying the absence forward).
+    """
+    day_baseline = {}    # weekday (0=Mon) -> Counter of non-absence day_status values
+    night_baseline = {}
+    for e in src_entries:
+        wd = date(e.year, e.month, e.day).weekday()
+        if _status_code(e.day_status) not in _ABSENCE_CODES:
+            day_baseline.setdefault(wd, Counter())[e.day_status] += 1
+        if _status_code(e.night_status) not in _ABSENCE_CODES:
+            night_baseline.setdefault(wd, Counter())[e.night_status] += 1
+
+    result = {}
+    for e in src_entries:
+        wd = date(e.year, e.month, e.day).weekday()
+        day_status = e.day_status
+        if _status_code(day_status) in _ABSENCE_CODES:
+            counter = day_baseline.get(wd)
+            day_status = counter.most_common(1)[0][0] if counter else ''
+        night_status = e.night_status
+        if _status_code(night_status) in _ABSENCE_CODES:
+            counter = night_baseline.get(wd)
+            night_status = counter.most_common(1)[0][0] if counter else ''
+        result[e.day] = (day_status, night_status)
+    return result
+
+
 def _apply_pattern_py(pattern: str, year: int, month: int, shift: str | None, start_date: date) -> dict:
     """
     Returns {day: {day_status, night_status}} for every day in the target month.
@@ -698,6 +746,15 @@ def copy_schedule(
             .first()
         )
         if dismissed:
+            # Уволенный сотрудник не переносится в новый месяц — и если в целевом
+            # месяце уже была более ранняя запись (например, от скользящего
+            # графика), её нужно убрать, а не просто пропустить копирование.
+            db.query(models.ScheduleEntry).filter_by(
+                employee_id=emp.id, year=to_year, month=to_month
+            ).delete()
+            db.query(models.SchedulePattern).filter_by(
+                employee_id=emp.id, year=to_year, month=to_month
+            ).delete()
             continue
 
         pattern_rec = (
@@ -722,16 +779,17 @@ def copy_schedule(
 
             days_in_target = calendar.monthrange(to_year, to_month)[1]
             src_map = {e.day: e for e in src_entries}
-            emp_shift = next((e.shift for e in src_entries if e.shift), None)
+            resolved = _replace_absences_with_work(src_entries)
 
             for d in range(1, days_in_target + 1):
                 src = src_map.get(d)
                 if src:
+                    day_status, night_status = resolved[d]
                     db.add(models.ScheduleEntry(
                         employee_id=emp.id,
                         year=to_year, month=to_month, day=d,
-                        day_status=src.day_status,
-                        night_status=src.night_status,
+                        day_status=day_status,
+                        night_status=night_status,
                         day_comment='', night_comment='',
                         shift=src.shift,
                     ))

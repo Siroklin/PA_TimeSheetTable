@@ -70,11 +70,11 @@ export default function CellEditor({ cell, onSave, onClose }) {
 
   function handleSave() {
     const codeStr = code === WORK ? '' : code;
-    const h = code === 'У' ? 0 : (Number(hours) || 0);
+    const h = code === 'У' ? 0 : Math.min(11, Number(hours) || 0);
     const value = h > 0 ? `${codeStr}${h}` : codeStr;
     onSave({
       empId: cell.empId, day: cell.day, endDay: Math.max(cell.day, endDay),
-      shiftType: cell.shiftType, value, comment,
+      shiftType: cell.shiftType, value, comment: value === '' ? '' : comment,
     });
     onClose();
   }
@@ -132,9 +132,13 @@ export default function CellEditor({ cell, onSave, onClose }) {
                 type="number"
                 className="comment-input"
                 min={0}
-                max={24}
+                max={11}
                 value={hours}
-                onChange={e => setHours(e.target.value)}
+                onChange={e => {
+                  const v = e.target.value;
+                  if (v === '') { setHours(v); return; }
+                  setHours(Math.min(11, Math.max(0, Number(v))));
+                }}
               />
             </div>
           )}
