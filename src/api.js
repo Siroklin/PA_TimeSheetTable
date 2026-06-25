@@ -190,6 +190,13 @@ export function fetchPattern(employeeId, year, month) {
 
 // ── Copy schedule ─────────────────────────────────────────────────────────────
 
+export function clearDepartmentSchedule(department, year, month) {
+  return apiFetch(
+    `/api/schedule/department?department=${encodeURIComponent(department)}&year=${year}&month=${month}`,
+    { method: 'DELETE' }
+  );
+}
+
 export function copySchedule(department, fromYear, fromMonth, toYear, toMonth) {
   return apiFetch(
     `/api/copy-schedule?department=${encodeURIComponent(department)}` +

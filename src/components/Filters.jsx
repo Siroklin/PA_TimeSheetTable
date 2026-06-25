@@ -14,7 +14,7 @@ export default function Filters({
   filters, period, positions, departments, isAdmin, canEdit,
   onFilterChange, onPeriodChange,
   onAddEmployee, onUploadClick, onManagePositions, onManageDepartments, onManageUsers,
-  onCopySchedule, onShowStats, onLogout,
+  onCopySchedule, onClearSchedule, onShowStats, onLogout,
 }) {
   const { department, position, shift } = filters;
   const { year, month } = period;
@@ -108,6 +108,7 @@ export default function Filters({
             {isAdmin && <button onClick={() => menuAction(onManageUsers)}>Управление пользователями</button>}
             <div className="service-separator" />
             {canEdit && <button onClick={() => menuAction(onCopySchedule)}>Копировать расписание</button>}
+            {isAdmin && <button onClick={() => menuAction(onClearSchedule)} style={{ color: '#c0392b' }}>Очистить расписание</button>}
             <button onClick={() => menuAction(onShowStats)}>Статистика по сотрудникам</button>
             {canEdit && <div className="service-separator" />}
             <button onClick={() => menuAction(onLogout)}>Выйти</button>

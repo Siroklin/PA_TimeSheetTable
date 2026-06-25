@@ -9,6 +9,7 @@ import AddPosition from './components/AddPosition';
 import ManageDepartments from './components/ManageDepartments';
 import UsersAdmin from './components/UsersAdmin';
 import CopySchedule from './components/CopySchedule';
+import ClearSchedule from './components/ClearSchedule';
 import EmployeeStats from './components/EmployeeStats';
 import Login from './components/Login';
 import {
@@ -68,6 +69,7 @@ export default function App() {
   const [showManageDepartments, setShowManageDepartments] = useState(false);
   const [showManageUsers, setShowManageUsers]     = useState(false);
   const [showCopySchedule, setShowCopySchedule]   = useState(false);
+  const [showClearSchedule, setShowClearSchedule] = useState(false);
   const [showStats, setShowStats]                 = useState(false);
 
   const { year, month } = period;
@@ -291,6 +293,7 @@ export default function App() {
         onManageDepartments={() => setShowManageDepartments(true)}
         onManageUsers={() => setShowManageUsers(true)}
         onCopySchedule={() => setShowCopySchedule(true)}
+        onClearSchedule={() => setShowClearSchedule(true)}
         onShowStats={() => setShowStats(true)}
         onLogout={handleLogout}
       />
@@ -385,6 +388,16 @@ export default function App() {
           departments={departments}
           currentUserId={user.id}
           onClose={() => setShowManageUsers(false)}
+        />
+      )}
+      {showClearSchedule && (
+        <ClearSchedule
+          departments={departments}
+          currentDepartment={filters.department}
+          fromYear={year}
+          fromMonth={month}
+          onSuccess={() => { loadData(); setShowClearSchedule(false); }}
+          onClose={() => setShowClearSchedule(false)}
         />
       )}
       {showCopySchedule && (

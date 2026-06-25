@@ -517,6 +517,36 @@ def clear_schedule(
     return {"ok": True}
 
 
+# ── Clear department schedule (admin only) ────────────────────────────────────
+
+@app.delete("/api/schedule/department")
+def clear_department_schedule(
+    department: str = Query(...),
+    year: int = Query(...),
+    month: int = Query(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_admin),
+):
+    check_department_access(current_user, department, db)
+    emp_ids = [
+        e.id for e in db.query(models.Employee.id)
+        .filter(models.Employee.department == department).all()
+    ]
+    if emp_ids:
+        db.query(models.ScheduleEntry).filter(
+            models.ScheduleEntry.employee_id.in_(emp_ids),
+            models.ScheduleEntry.year == year,
+            models.ScheduleEntry.month == month,
+        ).delete(synchronize_session=False)
+        db.query(models.SchedulePattern).filter(
+            models.SchedulePattern.employee_id.in_(emp_ids),
+            models.SchedulePattern.year == year,
+            models.SchedulePattern.month == month,
+        ).delete(synchronize_session=False)
+    db.commit()
+    return {"cleared": len(emp_ids)}
+
+
 # ── Employee shifts (читаем из schedule_entries) ──────────────────────────────
 
 @app.get("/api/employee-shifts")
