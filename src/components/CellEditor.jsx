@@ -52,6 +52,7 @@ export default function CellEditor({ cell, onSave, onClose }) {
   function handleCodeChange(v) {
     setCode(v);
     if (v === 'У') setEndDate(maxDateStr);
+    setComment('');
   }
 
   useEffect(() => {
