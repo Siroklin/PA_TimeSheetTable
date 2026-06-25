@@ -13,7 +13,7 @@ import EmployeeStats from './components/EmployeeStats';
 import Login from './components/Login';
 import {
   fetchEmployees, fetchSchedule, updateCell, getExportUrl,
-  fetchEmployeeShifts, deleteEmployee,
+  fetchEmployeeShifts, clearSchedule,
   fetchPositions, savePattern, fetchDepartments,
   fetchMe, getToken, clearToken,
 } from './api';
@@ -111,7 +111,7 @@ export default function App() {
     setError(null);
     try {
       const [emps, sched, shifts] = await Promise.all([
-        fetchEmployees(filters.department),
+        fetchEmployees(filters.department, year, month),
         fetchSchedule(filters.department, year, month),
         fetchEmployeeShifts(filters.department, year, month),
       ]);
@@ -242,9 +242,12 @@ export default function App() {
     }
   }
 
-  async function handleDeleteEmployee(empId) {
-    if (!confirm('Удалить сотрудника из системы? Это действие необратимо.')) return;
-    await deleteEmployee(empId);
+  const MONTH_NAMES = ['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
+
+  async function handleDeleteEmployee(emp) {
+    const periodLabel = `${MONTH_NAMES[month - 1]} ${year}`;
+    if (!confirm(`Удалить график сотрудника «${emp.name}» за ${periodLabel}?\n\nЭто удалит все записи расписания и шаблон за этот период. Сотрудник останется в системе.`)) return;
+    await clearSchedule(emp.id, year, month);
     loadData();
   }
 

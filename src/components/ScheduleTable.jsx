@@ -70,7 +70,7 @@ export default function ScheduleTable({
                         <button
                           className="btn-delete-emp"
                           title="Удалить сотрудника"
-                          onClick={() => onDeleteEmployee(emp.id)}
+                          onClick={() => onDeleteEmployee(emp)}
                         >
                           ×
                         </button>

@@ -82,8 +82,10 @@ export function updateEmployee(empId, data) {
   });
 }
 
-export function fetchEmployees(department) {
-  return apiFetch(`/api/employees?department=${encodeURIComponent(department)}`);
+export function fetchEmployees(department, year = null, month = null) {
+  let url = `/api/employees?department=${encodeURIComponent(department)}`;
+  if (year != null && month != null) url += `&year=${year}&month=${month}`;
+  return apiFetch(url);
 }
 
 export function fetchSchedule(department, year, month) {

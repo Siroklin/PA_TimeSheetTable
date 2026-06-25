@@ -258,15 +258,25 @@ def delete_department(
 
 @app.get("/api/employees", response_model=list[schemas.Employee])
 def get_employees(
-    department: str = Query(...), db: Session = Depends(get_db),
+    department: str = Query(...),
+    year: int = Query(None),
+    month: int = Query(None),
+    db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
     check_department_access(current_user, department, db)
-    return (
-        db.query(models.Employee)
-        .filter(models.Employee.department == department)
-        .all()
-    )
+    q = db.query(models.Employee).filter(models.Employee.department == department)
+
+    if year is not None and month is not None:
+        has_entries = (
+            db.query(models.ScheduleEntry.employee_id)
+            .filter_by(year=year, month=month)
+            .distinct()
+            .subquery()
+        )
+        q = q.filter(models.Employee.id.in_(has_entries))
+
+    return q.all()
 
 
 @app.post("/api/employees", response_model=schemas.Employee)
@@ -489,6 +499,9 @@ def clear_schedule(
 ):
     check_employee_access(current_user, emp_id, db)
     db.query(models.ScheduleEntry).filter_by(
+        employee_id=emp_id, year=year, month=month
+    ).delete()
+    db.query(models.SchedulePattern).filter_by(
         employee_id=emp_id, year=year, month=month
     ).delete()
     db.commit()
