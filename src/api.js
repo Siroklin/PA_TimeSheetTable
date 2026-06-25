@@ -190,11 +190,10 @@ export function fetchPattern(employeeId, year, month) {
 
 // ── Copy schedule ─────────────────────────────────────────────────────────────
 
-export function clearDepartmentSchedule(department, year, month) {
-  return apiFetch(
-    `/api/schedule/department?department=${encodeURIComponent(department)}&year=${year}&month=${month}`,
-    { method: 'DELETE' }
-  );
+export function clearDepartmentSchedule(department, year, month = null) {
+  let url = `/api/schedule/department?department=${encodeURIComponent(department)}&year=${year}`;
+  if (month != null) url += `&month=${month}`;
+  return apiFetch(url, { method: 'DELETE' });
 }
 
 export function copySchedule(department, fromYear, fromMonth, toYear, toMonth) {

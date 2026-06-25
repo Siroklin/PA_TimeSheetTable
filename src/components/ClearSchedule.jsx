@@ -13,19 +13,22 @@ function getYears() {
 
 export default function ClearSchedule({ departments, currentDepartment, fromYear, fromMonth, onSuccess, onClose }) {
   const [department, setDepartment] = useState(currentDepartment);
-  const [year, setYear]   = useState(fromYear);
-  const [month, setMonth] = useState(fromMonth);
+  const [year, setYear]       = useState(fromYear);
+  const [month, setMonth]     = useState(fromMonth);
+  const [wholeYear, setWholeYear] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
-  const [busy, setBusy]   = useState(false);
-  const [result, setResult] = useState(null);
-  const [error, setError]   = useState(null);
+  const [busy, setBusy]       = useState(false);
+  const [result, setResult]   = useState(null);
+  const [error, setError]     = useState(null);
+
+  function reset() { setConfirmed(false); setResult(null); }
 
   async function handleClear() {
     setBusy(true);
     setError(null);
     setResult(null);
     try {
-      const r = await clearDepartmentSchedule(department, year, month);
+      const r = await clearDepartmentSchedule(department, year, wholeYear ? null : month);
       setResult(r.cleared);
       onSuccess();
     } catch {
@@ -35,7 +38,7 @@ export default function ClearSchedule({ departments, currentDepartment, fromYear
     }
   }
 
-  const periodLabel = `${MONTHS[month - 1]} ${year}`;
+  const periodLabel = wholeYear ? `${year} год` : `${MONTHS[month - 1]} ${year}`;
 
   return (
     <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
@@ -56,36 +59,47 @@ export default function ClearSchedule({ departments, currentDepartment, fromYear
             <select
               className="form-input"
               value={department}
-              onChange={e => { setDepartment(e.target.value); setConfirmed(false); setResult(null); }}
+              onChange={e => { setDepartment(e.target.value); reset(); }}
             >
               {departments.map(d => <option key={d} value={d}>{d}</option>)}
             </select>
           </div>
 
           <div className="copy-period-row">
-            <div className="form-group" style={{ flex: 1 }}>
-              <label>Месяц</label>
-              <select
-                className="form-input"
-                value={month}
-                onChange={e => { setMonth(Number(e.target.value)); setConfirmed(false); setResult(null); }}
-              >
-                {MONTHS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
-              </select>
-            </div>
+            {!wholeYear && (
+              <div className="form-group" style={{ flex: 1 }}>
+                <label>Месяц</label>
+                <select
+                  className="form-input"
+                  value={month}
+                  onChange={e => { setMonth(Number(e.target.value)); reset(); }}
+                >
+                  {MONTHS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+                </select>
+              </div>
+            )}
             <div className="form-group" style={{ flex: 1 }}>
               <label>Год</label>
               <select
                 className="form-input"
                 value={year}
-                onChange={e => { setYear(Number(e.target.value)); setConfirmed(false); setResult(null); }}
+                onChange={e => { setYear(Number(e.target.value)); reset(); }}
               >
                 {getYears().map(y => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
           </div>
 
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginTop: 8 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: 12 }}>
+            <input
+              type="checkbox"
+              checked={wholeYear}
+              onChange={e => { setWholeYear(e.target.checked); reset(); }}
+            />
+            Очистить за весь год
+          </label>
+
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
             <input
               type="checkbox"
               checked={confirmed}
@@ -95,7 +109,7 @@ export default function ClearSchedule({ departments, currentDepartment, fromYear
           </label>
 
           {result !== null && (
-            <div className="copy-success">
+            <div className="copy-success" style={{ marginTop: 12 }}>
               Очищено сотрудников: <strong>{result}</strong>
             </div>
           )}

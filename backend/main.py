@@ -523,7 +523,7 @@ def clear_schedule(
 def clear_department_schedule(
     department: str = Query(...),
     year: int = Query(...),
-    month: int = Query(...),
+    month: int = Query(None),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_admin),
 ):
@@ -533,16 +533,19 @@ def clear_department_schedule(
         .filter(models.Employee.department == department).all()
     ]
     if emp_ids:
-        db.query(models.ScheduleEntry).filter(
+        q_entries = db.query(models.ScheduleEntry).filter(
             models.ScheduleEntry.employee_id.in_(emp_ids),
             models.ScheduleEntry.year == year,
-            models.ScheduleEntry.month == month,
-        ).delete(synchronize_session=False)
-        db.query(models.SchedulePattern).filter(
+        )
+        q_patterns = db.query(models.SchedulePattern).filter(
             models.SchedulePattern.employee_id.in_(emp_ids),
             models.SchedulePattern.year == year,
-            models.SchedulePattern.month == month,
-        ).delete(synchronize_session=False)
+        )
+        if month is not None:
+            q_entries  = q_entries.filter(models.ScheduleEntry.month == month)
+            q_patterns = q_patterns.filter(models.SchedulePattern.month == month)
+        q_entries.delete(synchronize_session=False)
+        q_patterns.delete(synchronize_session=False)
     db.commit()
     return {"cleared": len(emp_ids)}
 
