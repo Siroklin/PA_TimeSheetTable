@@ -281,7 +281,10 @@ def get_employees(
 
 @app.post("/api/employees", response_model=schemas.Employee)
 def create_employee(
-    emp: schemas.EmployeeCreate, db: Session = Depends(get_db),
+    emp: schemas.EmployeeCreate,
+    year: int = Query(None),
+    month: int = Query(None),
+    db: Session = Depends(get_db),
     current_user: models.User = Depends(require_can_edit),
 ):
     check_department_access(current_user, emp.department, db)
@@ -295,6 +298,12 @@ def create_employee(
         )
     db_emp = models.Employee(**emp.model_dump())
     db.add(db_emp)
+    db.flush()
+    if year and month:
+        db.add(models.ScheduleEntry(
+            employee_id=db_emp.id, year=year, month=month, day=1,
+            day_status="", night_status="", day_comment="", night_comment="",
+        ))
     db.commit()
     db.refresh(db_emp)
     return db_emp

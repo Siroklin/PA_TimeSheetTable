@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { createEmployee, updateEmployee } from '../api';
 
-export default function AddEmployee({ department, positions, employee, onSuccess, onClose }) {
+export default function AddEmployee({ department, positions, employee, year, month, onSuccess, onClose }) {
   const isEdit = !!employee;
   const firstPos = (positions && positions.length > 0) ? positions[0].position : '';
   const [form, setForm] = useState(
@@ -23,7 +23,7 @@ export default function AddEmployee({ department, positions, employee, onSuccess
       if (isEdit) {
         await updateEmployee(employee.id, form);
       } else {
-        await createEmployee({ ...form, department });
+        await createEmployee({ ...form, department }, year, month);
       }
       onSuccess();
       onClose();

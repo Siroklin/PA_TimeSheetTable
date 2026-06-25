@@ -346,6 +346,8 @@ export default function App() {
         <AddEmployee
           department={filters.department}
           positions={positions}
+          year={year}
+          month={month}
           onSuccess={loadData}
           onClose={() => setShowAddEmployee(false)}
         />

@@ -66,8 +66,10 @@ export function deleteUser(id) {
   return apiFetch(`/api/users/${id}`, { method: 'DELETE' });
 }
 
-export function createEmployee(data) {
-  return apiFetch('/api/employees', {
+export function createEmployee(data, year = null, month = null) {
+  let url = '/api/employees';
+  if (year != null && month != null) url += `?year=${year}&month=${month}`;
+  return apiFetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
