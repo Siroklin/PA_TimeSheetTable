@@ -19,9 +19,11 @@ from . import schemas
 from .excel import generate_excel
 from .auth import (
     hash_password, verify_password, create_token, ldap_authenticate,
+    LDAPConfigError,
     get_current_user, require_admin, require_can_edit,
     check_department_access, check_employee_access,
 )
+from ldap3.core.exceptions import LDAPException
 
 Base.metadata.create_all(bind=engine)
 
@@ -120,11 +122,15 @@ def login(body: schemas.LoginRequest, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=401, detail="Неверный логин или пароль")
     if user.ldap:
-        authenticated = ldap_authenticate(user.ldap, body.password)
+        try:
+            ldap_authenticate(user.ldap, body.password)
+        except LDAPConfigError as e:
+            raise HTTPException(status_code=503, detail=str(e))
+        except LDAPException as e:
+            raise HTTPException(status_code=401, detail=f"LDAP: {e}")
     else:
-        authenticated = verify_password(body.password, user.password_hash)
-    if not authenticated:
-        raise HTTPException(status_code=401, detail="Неверный логин или пароль")
+        if not verify_password(body.password, user.password_hash):
+            raise HTTPException(status_code=401, detail="Неверный логин или пароль")
     token = create_token(user.id)
     return schemas.LoginResponse(token=token, user=_user_out(db, user))
 

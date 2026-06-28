@@ -21,18 +21,26 @@ PBKDF2_ITERATIONS = 100_000
 LDAP_SERVER = os.getenv("LDAP_SERVER")  # e.g. "ldap://dc.example.local:389"
 
 
+class LDAPConfigError(Exception):
+    """LDAP_SERVER env var not set or empty."""
+
+
 def ldap_authenticate(bind_dn: str, password: str) -> bool:
     """Verify credentials with a simple bind against LDAP_SERVER.
-    bind_dn is the value stored in User.ldap (a UPN or full DN)."""
-    if not LDAP_SERVER or not password:
-        return False
-    try:
-        server = Server(LDAP_SERVER)
-        conn = Connection(server, user=bind_dn, password=password, auto_bind=True)
-        conn.unbind()
-        return True
-    except LDAPException:
-        return False
+    bind_dn is the value stored in User.ldap (a UPN or full DN).
+    Raises LDAPConfigError if LDAP_SERVER is not configured.
+    Raises LDAPException (from ldap3) if the bind fails."""
+    if not LDAP_SERVER:
+        raise LDAPConfigError(
+            "LDAP_SERVER не настроен на сервере. "
+            "Добавьте переменную окружения LDAP_SERVER (например: ldap://dc.example.local:389)."
+        )
+    if not password:
+        raise LDAPException("Пароль не указан")
+    server = Server(LDAP_SERVER, connect_timeout=5)
+    conn = Connection(server, user=bind_dn, password=password, auto_bind=True)
+    conn.unbind()
+    return True
 
 
 def hash_password(password: str) -> str:

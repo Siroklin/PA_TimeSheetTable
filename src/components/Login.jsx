@@ -18,8 +18,8 @@ export default function Login({ onLogin }) {
       const resp = await login(loginName.trim(), password);
       setToken(resp.token);
       onLogin(resp.user);
-    } catch {
-      setError('Неверный логин или пароль.');
+    } catch (e) {
+      setError(e.message || 'Неверный логин или пароль.');
     } finally {
       setLoading(false);
     }

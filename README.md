@@ -1,16 +1,64 @@
-# React + Vite
+# График работы сотрудников
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Веб-приложение для ведения табеля рабочего времени по цехам и отделам.
 
-Currently, two official plugins are available:
+## Стек
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Frontend:** React + Vite
+- **Backend:** Python + FastAPI
+- **БД:** PostgreSQL (SQLite локально)
+- **Деплой:** Docker + docker-compose
 
-## React Compiler
+## Локальный запуск
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+# Бэкенд
+uvicorn backend.main:app --reload --port 8000
 
-## Expanding the ESLint configuration
+# Фронтенд (в отдельном терминале)
+npm install
+npm run dev
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Прокси `/api` → `localhost:8000` настроен в `vite.config.js`.
+
+## Продакшн (Docker)
+
+```bash
+cp .env.example .env   # заполнить переменные
+docker compose up -d --build
+```
+
+Переменные окружения:
+
+| Переменная | Описание |
+|---|---|
+| `POSTGRES_USER` | Пользователь PostgreSQL |
+| `POSTGRES_PASSWORD` | Пароль PostgreSQL |
+| `POSTGRES_DB` | Имя базы данных |
+| `SECRET_KEY` | Секрет для JWT-токенов |
+| `APP_PORT` | Порт приложения (по умолчанию `8000`) |
+| `DOMAIN` | Публичный URL (для CORS/заголовков) |
+| `LDAP_SERVER` | Адрес LDAP-сервера (опционально) |
+
+## Структура
+
+```
+backend/
+  main.py       — FastAPI, все эндпоинты
+  models.py     — SQLAlchemy модели
+  schemas.py    — Pydantic схемы
+  excel.py      — Генерация .xlsx
+  auth.py       — JWT + LDAP аутентификация
+  database.py   — Подключение к БД
+
+src/
+  App.jsx       — Главный компонент
+  api.js        — HTTP-клиент
+  components/   — Компоненты (таблица, редакторы, модалки)
+```
+
+## Документация
+
+Подробное руководство пользователя: [USER_MANUAL.md](USER_MANUAL.md)  
+Инструкция по деплою: [DEPLOY.md](DEPLOY.md)
