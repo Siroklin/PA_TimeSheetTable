@@ -1,9 +1,60 @@
 import { useState } from 'react';
+import * as XLSX from 'xlsx';
 import { uploadEmployees } from '../api';
 
 const EXAMPLE = `001,Цех №1,Иванов Иван Иванович,Оператор
 002,Склад,Петрова Мария Сергеевна,Кладовщик
 003,ПроИнокс,Козлов Андрей Павлович,Технолог`;
+
+// Header aliases: Excel column name → internal field
+const HEADER_MAP = {
+  'код': 'code', 'code': 'code',
+  'отдел': 'department', 'department': 'department', 'подразделение': 'department',
+  'фио': 'name', 'имя': 'name', 'name': 'name', 'ф.и.о.': 'name',
+  'должность': 'position', 'position': 'position',
+};
+
+function parseXlsx(buffer, departments) {
+  const wb = XLSX.read(buffer, { type: 'array' });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+  if (!raw.length) return { rows: [], errors: ['Файл пустой'] };
+
+  const errors = [];
+  const rows = [];
+
+  // Detect if first row is a header
+  const firstRow = raw[0].map(c => String(c).trim().toLowerCase());
+  const mappedHeaders = firstRow.map(h => HEADER_MAP[h] ?? null);
+  const hasHeader = mappedHeaders.some(h => h !== null);
+
+  const dataRows = hasHeader ? raw.slice(1) : raw;
+  const fieldOrder = hasHeader
+    ? mappedHeaders  // null means skip that column
+    : ['code', 'department', 'name', 'position']; // positional fallback
+
+  dataRows.forEach((row, idx) => {
+    const lineNum = hasHeader ? idx + 2 : idx + 1;
+    const obj = {};
+    fieldOrder.forEach((field, i) => {
+      if (field) obj[field] = String(row[i] ?? '').trim();
+    });
+
+    const { code, department, name, position } = obj;
+    if (!code || !department || !name || !position) {
+      errors.push(`Строка ${lineNum}: не заполнены обязательные поля (код, отдел, ФИО, должность)`);
+      return;
+    }
+    if (!departments.includes(department)) {
+      errors.push(`Строка ${lineNum}: неизвестный отдел «${department}». Допустимые: ${departments.join(', ')}`);
+      return;
+    }
+    rows.push({ code, department, name, position });
+  });
+
+  return { rows, errors };
+}
 
 function parseCsv(text, departments) {
   const errors = [];
@@ -42,13 +93,25 @@ export default function EmployeeUpload({ departments, onSuccess, onClose }) {
   function handleFileChange(e) {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      setText(ev.target.result);
-      setParsed(null);
-      setErrors([]);
-    };
-    reader.readAsText(file, 'utf-8');
+    const isXlsx = file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls');
+    if (isXlsx) {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const { rows, errors: errs } = parseXlsx(new Uint8Array(ev.target.result), departments || []);
+        setText('');
+        setParsed(rows);
+        setErrors(errs);
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        setText(ev.target.result);
+        setParsed(null);
+        setErrors([]);
+      };
+      reader.readAsText(file, 'utf-8');
+    }
   }
 
   async function handleConfirm() {
@@ -83,10 +146,10 @@ export default function EmployeeUpload({ departments, onSuccess, onClose }) {
 
           <div className="upload-actions-row">
             <label className="btn-file-upload">
-              Выбрать файл (.csv)
-              <input type="file" accept=".csv,.txt" onChange={handleFileChange} hidden />
+              Выбрать файл (.xlsx / .csv)
+              <input type="file" accept=".xlsx,.xls,.csv,.txt" onChange={handleFileChange} hidden />
             </label>
-            <span className="upload-or">или вставьте текст ниже</span>
+            <span className="upload-or">или вставьте CSV текст ниже</span>
           </div>
 
           <textarea
