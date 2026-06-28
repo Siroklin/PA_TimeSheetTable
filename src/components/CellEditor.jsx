@@ -71,7 +71,7 @@ export default function CellEditor({ cell, onSave, onClose }) {
 
   function handleSave() {
     const codeStr = code === WORK ? '' : code;
-    const h = code === 'У' ? 0 : Math.min(11, Number(hours) || 0);
+    const h = (code === 'У' || code === 'В') ? 0 : Math.min(11, Number(hours) || 0);
     const value = h > 0 ? `${codeStr}${h}` : codeStr;
     onSave({
       empId: cell.empId, day: cell.day, endDay: Math.max(cell.day, endDay),
@@ -126,7 +126,7 @@ export default function CellEditor({ cell, onSave, onClose }) {
             ))}
           </div>
 
-          {code !== 'У' && (
+          {code !== 'У' && code !== 'В' && (
             <div className="comment-group">
               <label>Часы работы</label>
               <input
