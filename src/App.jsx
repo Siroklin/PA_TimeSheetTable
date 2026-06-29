@@ -343,7 +343,7 @@ export default function App() {
         />
       )}
       {showUpload && (
-        <EmployeeUpload departments={visibleDepartments} onSuccess={loadData} onClose={() => setShowUpload(false)} />
+        <EmployeeUpload departments={visibleDepartments} year={year} month={month} onSuccess={loadData} onClose={() => setShowUpload(false)} />
       )}
       {showAddEmployee && (
         <AddEmployee

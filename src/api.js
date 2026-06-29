@@ -118,8 +118,10 @@ export function fetchEmployeeShifts(department, year, month) {
   );
 }
 
-export function uploadEmployees(employees) {
-  return apiFetch('/api/employees/bulk', {
+export function uploadEmployees(employees, year = null, month = null) {
+  let url = '/api/employees/bulk';
+  if (year != null && month != null) url += `?year=${year}&month=${month}`;
+  return apiFetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(employees),

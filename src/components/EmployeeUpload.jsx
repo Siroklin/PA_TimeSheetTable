@@ -77,7 +77,7 @@ function parseCsv(text, departments) {
   return { rows, errors };
 }
 
-export default function EmployeeUpload({ departments, onSuccess, onClose }) {
+export default function EmployeeUpload({ departments, year, month, onSuccess, onClose }) {
   const [text, setText]       = useState('');
   const [parsed, setParsed]   = useState(null);
   const [errors, setErrors]   = useState([]);
@@ -119,7 +119,7 @@ export default function EmployeeUpload({ departments, onSuccess, onClose }) {
     setSaving(true);
     setSaveErr(null);
     try {
-      await uploadEmployees(parsed);
+      await uploadEmployees(parsed, year, month);
       onSuccess();
       onClose();
     } catch {

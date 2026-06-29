@@ -342,7 +342,10 @@ def update_employee(
 
 @app.post("/api/employees/bulk")
 def bulk_employees(
-    employees: list[schemas.EmployeeCreate], db: Session = Depends(get_db),
+    employees: list[schemas.EmployeeCreate],
+    year: int = Query(None),
+    month: int = Query(None),
+    db: Session = Depends(get_db),
     current_user: models.User = Depends(require_can_edit),
 ):
     for emp in employees:
@@ -353,7 +356,14 @@ def bulk_employees(
             code=emp.code, department=emp.department
         ).first()
         if not exists:
-            db.add(models.Employee(**emp.model_dump()))
+            db_emp = models.Employee(**emp.model_dump())
+            db.add(db_emp)
+            db.flush()
+            if year and month:
+                db.add(models.ScheduleEntry(
+                    employee_id=db_emp.id, year=year, month=month, day=1,
+                    day_status="", night_status="", day_comment="", night_comment="",
+                ))
             added += 1
     db.commit()
     return {"added": added}
