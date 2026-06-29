@@ -651,6 +651,28 @@ def delete_position(
 
 # ── Schedule patterns ─────────────────────────────────────────────────────────
 
+@app.get("/api/schedule-patterns/bulk")
+def get_schedule_patterns_bulk(
+    department: str = Query(...),
+    year: int = Query(...),
+    month: int = Query(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    check_department_access(current_user, department, db)
+    emp_ids = [
+        e.id for e in db.query(models.Employee)
+        .filter(models.Employee.department == department)
+        .all()
+    ]
+    recs = db.query(models.SchedulePattern).filter(
+        models.SchedulePattern.employee_id.in_(emp_ids),
+        models.SchedulePattern.year == year,
+        models.SchedulePattern.month == month,
+    ).all()
+    return {r.employee_id: {"pattern": r.pattern, "shift": r.shift} for r in recs}
+
+
 @app.get("/api/schedule-patterns/{employee_id}")
 def get_schedule_pattern(
     employee_id: int, year: int, month: int, db: Session = Depends(get_db),

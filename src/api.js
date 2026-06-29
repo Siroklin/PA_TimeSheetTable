@@ -190,6 +190,10 @@ export function fetchPattern(employeeId, year, month) {
   return apiFetch(`/api/schedule-patterns/${employeeId}?year=${year}&month=${month}`);
 }
 
+export function fetchPatternsBulk(department, year, month) {
+  return apiFetch(`/api/schedule-patterns/bulk?department=${encodeURIComponent(department)}&year=${year}&month=${month}`);
+}
+
 // ── Copy schedule ─────────────────────────────────────────────────────────────
 
 export function clearDepartmentSchedule(department, year, month = null) {

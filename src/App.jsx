@@ -16,7 +16,7 @@ import {
   fetchEmployees, fetchSchedule, updateCell, getExportUrl,
   fetchEmployeeShifts, clearSchedule,
   fetchPositions, savePattern, fetchDepartments,
-  fetchMe, getToken, clearToken,
+  fetchMe, getToken, clearToken, fetchPatternsBulk,
 } from './api';
 import { isWorkValue, splitCode } from './mockData';
 import './App.css';
@@ -54,8 +54,9 @@ export default function App() {
 
   const [departments, setDepartments] = useState([]);
   const [employees, setEmployees]     = useState([]);
-  const [scheduleMap, setScheduleMap] = useState({});
-  const [shiftsMap, setShiftsMap]     = useState({});
+  const [scheduleMap, setScheduleMap]   = useState({});
+  const [shiftsMap, setShiftsMap]       = useState({});
+  const [patternsMap, setPatternsMap]   = useState({});
   const [positions, setPositions]     = useState([]);
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState(null);
@@ -112,14 +113,16 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      const [emps, sched, shifts] = await Promise.all([
+      const [emps, sched, shifts, patterns] = await Promise.all([
         fetchEmployees(filters.department, year, month),
         fetchSchedule(filters.department, year, month),
         fetchEmployeeShifts(filters.department, year, month),
+        fetchPatternsBulk(filters.department, year, month),
       ]);
       setEmployees(emps);
       setScheduleMap(sched);
       setShiftsMap(shifts);
+      setPatternsMap(patterns ?? {});
     } catch {
       setError('Не удалось загрузить данные. Проверьте подключение к серверу.');
     } finally {
@@ -414,6 +417,7 @@ export default function App() {
         <EmployeeStats
           employees={visibleEmployees}
           schedule={scheduleMap}
+          patterns={patternsMap}
           year={year}
           month={month}
           onClose={() => setShowStats(false)}

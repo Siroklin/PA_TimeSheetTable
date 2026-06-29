@@ -1,5 +1,20 @@
 import { isWorkValue, splitCode } from '../mockData';
 
+const PAID_ABSENCE_CODES = new Set(['О', 'Б']);
+
+const PATTERN_HOURS = { '5-0': 8 };
+function patternToHours(pattern) {
+  return PATTERN_HOURS[pattern] ?? 11;
+}
+
+function cellHours(value, defaultHours) {
+  if (!value) return 0;
+  const { code, hours } = splitCode(value);
+  if (code === '') return hours ?? 0;
+  if (PAID_ABSENCE_CODES.has(code)) return hours ?? defaultHours;
+  return 0;
+}
+
 function getWeekdayCount(year, month) {
   const daysInMonth = new Date(year, month, 0).getDate();
   let count = 0;
@@ -10,30 +25,27 @@ function getWeekdayCount(year, month) {
   return count;
 }
 
-function computeStats(employees, schedule, year, month) {
+function computeStats(employees, schedule, patterns, year, month) {
   const daysInMonth = new Date(year, month, 0).getDate();
   const normHours = getWeekdayCount(year, month) * 8;
   return employees.map(emp => {
     const sched = schedule[emp.id] ?? schedule[String(emp.id)] ?? {};
+    const pat = patterns[emp.id] ?? patterns[String(emp.id)];
+    const defaultHours = pat ? patternToHours(pat.pattern) : 8;
     let dayShifts = 0, nightShifts = 0, hours = 0;
     for (let d = 1; d <= daysInMonth; d++) {
       const cell = sched[d] ?? {};
-      if (isWorkValue(cell.day)) {
-        dayShifts += 1;
-        hours += splitCode(cell.day).hours ?? 0;
-      }
-      if (isWorkValue(cell.nightShift)) {
-        nightShifts += 1;
-        hours += splitCode(cell.nightShift).hours ?? 0;
-      }
+      if (isWorkValue(cell.day)) dayShifts += 1;
+      if (isWorkValue(cell.nightShift)) nightShifts += 1;
+      hours += cellHours(cell.day, defaultHours) + cellHours(cell.nightShift, defaultHours);
     }
     const deviation = hours - normHours;
     return { emp, dayShifts, nightShifts, shifts: dayShifts + nightShifts, hours, normHours, deviation };
   });
 }
 
-export default function EmployeeStats({ employees, schedule, year, month, onClose }) {
-  const rows = computeStats(employees, schedule, year, month);
+export default function EmployeeStats({ employees, schedule, patterns = {}, year, month, onClose }) {
+  const rows = computeStats(employees, schedule, patterns, year, month);
   const normHours = rows[0]?.normHours ?? getWeekdayCount(year, month) * 8;
   const totals = rows.reduce((acc, r) => ({
     dayShifts: acc.dayShifts + r.dayShifts,
