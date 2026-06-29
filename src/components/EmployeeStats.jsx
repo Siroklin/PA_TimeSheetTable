@@ -7,6 +7,12 @@ function patternToHours(pattern) {
   return PATTERN_HOURS[pattern] ?? 11;
 }
 
+function absenceHours(value, defaultHours) {
+  if (!value) return 0;
+  const { code, hours } = splitCode(value);
+  return PAID_ABSENCE_CODES.has(code) ? (hours ?? defaultHours) : 0;
+}
+
 function computeStats(employees, schedule, patterns, year, month) {
   const daysInMonth = new Date(year, month, 0).getDate();
   return employees.map(emp => {
@@ -24,10 +30,12 @@ function computeStats(employees, schedule, patterns, year, month) {
           normHours += h;
           factHours += h;
           if (isDay) dayShifts += 1; else nightShifts += 1;
-        } else if (PAID_ABSENCE_CODES.has(code)) {
-          factHours += hours ?? defaultHours;
         }
       }
+      // О/Б считаем один раз за день (не суммируем day+night)
+      const dayAbs  = absenceHours(cell.day,        defaultHours);
+      const nightAbs = absenceHours(cell.nightShift, defaultHours);
+      factHours += Math.max(dayAbs, nightAbs);
     }
     const deviation = factHours - normHours;
     return { emp, dayShifts, nightShifts, shifts: dayShifts + nightShifts, normHours, factHours, deviation };
