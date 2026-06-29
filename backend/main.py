@@ -670,7 +670,7 @@ def get_schedule_patterns_bulk(
         models.SchedulePattern.year == year,
         models.SchedulePattern.month == month,
     ).all()
-    return {r.employee_id: {"pattern": r.pattern, "shift": r.shift} for r in recs}
+    return {r.employee_id: {"pattern": r.pattern, "shift": r.shift, "start_date": r.start_date} for r in recs}
 
 
 @app.get("/api/schedule-patterns/{employee_id}")
