@@ -2,27 +2,29 @@ import { splitCode } from '../mockData';
 
 const PAID_ABSENCE_CODES = new Set(['О', 'Б']);
 
-// Воспроизводит логику бэкенда _apply_pattern_py — считает норму часов за месяц по паттерну
-function calcNormByPattern(pattern, shift, startDateStr, year, month) {
+// Возвращает {day: hours} — сколько часов по паттерну на каждый день месяца
+function buildPatternMap(pattern, startDateStr, year, month) {
   const startDate = new Date(startDateStr);
   startDate.setHours(0, 0, 0, 0);
   const daysInMonth = new Date(year, month, 0).getDate();
-  let hours = 0;
+  const map = {};
   for (let d = 1; d <= daysInMonth; d++) {
     const cur = new Date(year, month - 1, d);
-    const dow = cur.getDay(); // 0=Sun, 1=Mon … 6=Sat
+    const dow = cur.getDay();
     const diff = Math.round((cur - startDate) / 86400000);
+    let h = 0;
     if (pattern === 'ДНОВ') {
-      if (diff >= 0 && diff % 4 < 2) hours += 11;
+      if (diff >= 0 && diff % 4 < 2) h = 11;
     } else if (pattern === '5-0') {
-      if (dow >= 1 && dow <= 5) hours += 8;
+      if (dow >= 1 && dow <= 5) h = 8;
     } else if (pattern === '6-1') {
-      if (dow >= 1 && dow <= 6) hours += 11;
+      if (dow >= 1 && dow <= 6) h = 11;
     } else if (pattern === '2x2') {
-      if (diff >= 0 && diff % 4 < 2) hours += 11;
+      if (diff >= 0 && diff % 4 < 2) h = 11;
     }
+    map[d] = h;
   }
-  return hours;
+  return map;
 }
 
 function absenceHours(value, defaultHours) {
@@ -41,13 +43,17 @@ function computeStats(employees, schedule, patterns, year, month) {
   return employees.map(emp => {
     const sched = schedule[emp.id] ?? schedule[String(emp.id)] ?? {};
     const pat = patterns[emp.id] ?? patterns[String(emp.id)];
+
+    const patMap = pat?.start_date
+      ? buildPatternMap(pat.pattern, pat.start_date, year, month)
+      : null;
+
+    // Норма — сумма часов по паттерну за все дни месяца
+    const normHours = patMap
+      ? Object.values(patMap).reduce((s, h) => s + h, 0)
+      : null;
+
     const defaultHours = pat ? patternToHours(pat.pattern) : 8;
-
-    // Норма — по паттерну (включая дни, замещённые О/Б)
-    const normHours = pat?.start_date
-      ? calcNormByPattern(pat.pattern, pat.shift, pat.start_date, year, month)
-      : null; // null = паттерн неизвестен
-
     let dayShifts = 0, nightShifts = 0, factHours = 0;
     for (let d = 1; d <= daysInMonth; d++) {
       const cell = sched[d] ?? {};
@@ -59,10 +65,11 @@ function computeStats(employees, schedule, patterns, year, month) {
           if (isDay) dayShifts += 1; else nightShifts += 1;
         }
       }
-      // О/Б — один раз за день (не суммируем day+night)
-      const dayAbs   = absenceHours(cell.day,        defaultHours);
-      const nightAbs = absenceHours(cell.nightShift, defaultHours);
-      factHours += Math.max(dayAbs, nightAbs);
+      // О/Б: считаем по паттерну для этого дня (выходной → 0ч, рабочий → часы смены)
+      const hasAbsence = absenceHours(cell.day, 1) > 0 || absenceHours(cell.nightShift, 1) > 0;
+      if (hasAbsence) {
+        factHours += patMap ? patMap[d] : defaultHours;
+      }
     }
 
     const deviation = normHours !== null ? factHours - normHours : null;
