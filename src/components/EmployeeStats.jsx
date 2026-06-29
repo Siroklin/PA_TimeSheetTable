@@ -43,36 +43,36 @@ function computeStats(employees, schedule, patterns, year, month) {
   return employees.map(emp => {
     const sched = schedule[emp.id] ?? schedule[String(emp.id)] ?? {};
     const pat = patterns[emp.id] ?? patterns[String(emp.id)];
-
     const patMap = pat?.start_date
       ? buildPatternMap(pat.pattern, pat.start_date, year, month)
       : null;
-
-    // Норма — сумма часов по паттерну за все дни месяца
-    const normHours = patMap
-      ? Object.values(patMap).reduce((s, h) => s + h, 0)
-      : null;
-
     const defaultHours = pat ? patternToHours(pat.pattern) : 8;
-    let dayShifts = 0, nightShifts = 0, factHours = 0;
+
+    let dayShifts = 0, nightShifts = 0, normHours = 0, factHours = 0;
     for (let d = 1; d <= daysInMonth; d++) {
       const cell = sched[d] ?? {};
+      // Рабочие смены — в норму и в факт
       for (const [val, isDay] of [[cell.day, true], [cell.nightShift, false]]) {
         if (!val) continue;
         const { code, hours } = splitCode(val);
         if (code === '') {
-          factHours += hours ?? defaultHours;
+          const h = hours ?? defaultHours;
+          normHours += h;
+          factHours += h;
           if (isDay) dayShifts += 1; else nightShifts += 1;
         }
       }
-      // О/Б: считаем по паттерну для этого дня (выходной → 0ч, рабочий → часы смены)
+      // О/Б: по паттерну для этого дня (выходной → 0ч, рабочий → часы смены)
+      // В норму не идут, только в факт
       const hasAbsence = absenceHours(cell.day, 1) > 0 || absenceHours(cell.nightShift, 1) > 0;
       if (hasAbsence) {
-        factHours += patMap ? patMap[d] : defaultHours;
+        const h = patMap ? patMap[d] : defaultHours;
+        normHours += h; // рабочий день по паттерну — должен был быть отработан
+        factHours += h;
       }
     }
 
-    const deviation = normHours !== null ? factHours - normHours : null;
+    const deviation = factHours - normHours;
     return { emp, dayShifts, nightShifts, shifts: dayShifts + nightShifts, normHours, factHours, deviation };
   });
 }
