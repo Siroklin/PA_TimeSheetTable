@@ -9,6 +9,7 @@ export default function UsersAdmin({ departments, currentUserId, onClose }) {
   const [form, setForm]       = useState(EMPTY_FORM);
   const [saving, setSaving]   = useState(false);
   const [error, setError]     = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const loadUsers = useCallback(async () => {
     try {
@@ -24,18 +25,21 @@ export default function UsersAdmin({ departments, currentUserId, onClose }) {
     setEditingId(u.id);
     setForm({ name: u.name, email: u.email, login: u.login, ldap: u.ldap || '', password: '', is_admin: u.is_admin, role: u.role, departments: u.departments });
     setError(null);
+    setFieldErrors({});
   }
 
   function startAdd() {
     setEditingId('new');
     setForm(EMPTY_FORM);
     setError(null);
+    setFieldErrors({});
   }
 
   function cancelForm() {
     setEditingId(null);
     setForm(EMPTY_FORM);
     setError(null);
+    setFieldErrors({});
   }
 
   function toggleDept(dept) {
@@ -48,8 +52,12 @@ export default function UsersAdmin({ departments, currentUserId, onClose }) {
   }
 
   async function handleSave() {
-    if (!form.name.trim() || !form.login.trim()) return;
-    if (editingId === 'new' && !form.password && !form.ldap.trim()) return;
+    const errs = {};
+    if (!form.name.trim()) errs.name = 'Обязательное поле';
+    if (!form.login.trim()) errs.login = 'Обязательное поле';
+    if (editingId === 'new' && !form.password && !form.ldap.trim()) errs.password = 'Укажите пароль или LDAP';
+    if (Object.keys(errs).length > 0) { setFieldErrors(errs); return; }
+    setFieldErrors({});
     setSaving(true);
     setError(null);
     try {
@@ -123,28 +131,48 @@ export default function UsersAdmin({ departments, currentUserId, onClose }) {
               <div className="users-edit-grid">
                 <div className="users-edit-col">
                   <div className="form-group">
-                    <label>Имя</label>
-                    <input className="form-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+                    <label>Имя <span className="req">*</span></label>
+                    <input
+                      className={`form-input${fieldErrors.name ? ' input-error' : ''}`}
+                      value={form.name}
+                      onChange={e => { setForm(f => ({ ...f, name: e.target.value })); setFieldErrors(fe => ({ ...fe, name: undefined })); }}
+                    />
+                    {fieldErrors.name && <div className="field-error">{fieldErrors.name}</div>}
                   </div>
                   <div className="form-group">
                     <label>Почта</label>
                     <input className="form-input" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
                   </div>
                   <div className="form-group">
-                    <label>Логин</label>
-                    <input className="form-input" value={form.login} onChange={e => setForm(f => ({ ...f, login: e.target.value }))} />
+                    <label>Логин <span className="req">*</span></label>
+                    <input
+                      className={`form-input${fieldErrors.login ? ' input-error' : ''}`}
+                      value={form.login}
+                      onChange={e => { setForm(f => ({ ...f, login: e.target.value })); setFieldErrors(fe => ({ ...fe, login: undefined })); }}
+                    />
+                    {fieldErrors.login && <div className="field-error">{fieldErrors.login}</div>}
                   </div>
                   <div className="form-group">
                     <label>LDAP (UPN/DN, необязательно)</label>
-                    <input className="form-input" value={form.ldap} onChange={e => setForm(f => ({ ...f, ldap: e.target.value }))} />
+                    <input
+                      className={`form-input${fieldErrors.password && !form.ldap.trim() ? ' input-error' : ''}`}
+                      value={form.ldap}
+                      onChange={e => { setForm(f => ({ ...f, ldap: e.target.value })); setFieldErrors(fe => ({ ...fe, password: undefined })); }}
+                    />
                   </div>
                   <div className="form-group">
                     <label>
                       Пароль {editingId !== 'new'
                         ? '(оставьте пустым, чтобы не менять)'
-                        : form.ldap.trim() && '(не нужен — вход через LDAP)'}
+                        : form.ldap.trim() ? '(не нужен — вход через LDAP)' : <span className="req">*</span>}
                     </label>
-                    <input className="form-input" type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} />
+                    <input
+                      className={`form-input${fieldErrors.password && !form.ldap.trim() ? ' input-error' : ''}`}
+                      type="password"
+                      value={form.password}
+                      onChange={e => { setForm(f => ({ ...f, password: e.target.value })); setFieldErrors(fe => ({ ...fe, password: undefined })); }}
+                    />
+                    {fieldErrors.password && !form.ldap.trim() && <div className="field-error">{fieldErrors.password}</div>}
                   </div>
                   <div className="form-group">
                     <label>

@@ -638,7 +638,7 @@ def add_position(
 @app.delete("/api/positions/{pos_id}")
 def delete_position(
     pos_id: int, db: Session = Depends(get_db),
-    current_user: models.User = Depends(require_can_edit),
+    current_user: models.User = Depends(require_admin),
 ):
     obj = db.get(models.DepartmentPosition, pos_id)
     if not obj:

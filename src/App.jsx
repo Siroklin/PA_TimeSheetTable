@@ -369,6 +369,7 @@ export default function App() {
           department={filters.department}
           departments={visibleDepartments}
           positions={positions}
+          isAdmin={user.is_admin}
           onSuccess={dept => loadPositions(dept || filters.department)}
           onClose={() => {
             setShowAddPosition(false);

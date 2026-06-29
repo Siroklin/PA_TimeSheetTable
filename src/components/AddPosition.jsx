@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { addPosition, deletePosition } from '../api';
 
-export default function AddPosition({ department, departments, positions, onSuccess, onClose }) {
+export default function AddPosition({ department, departments, positions, isAdmin, onSuccess, onClose }) {
   const [selDept, setSelDept] = useState(department);
   const [newPos, setNewPos]   = useState('');
   const [saving, setSaving]   = useState(false);
@@ -59,7 +59,9 @@ export default function AddPosition({ department, departments, positions, onSucc
             {positions.map(p => (
               <div key={p.id} className="pos-list-item">
                 <span>{p.position}</span>
-                <button className="btn-delete-pos" onClick={() => handleDelete(p)}>×</button>
+                {isAdmin && (
+                  <button className="btn-delete-pos" onClick={() => handleDelete(p)}>×</button>
+                )}
               </div>
             ))}
           </div>

@@ -347,6 +347,7 @@ body {
 
 .req { color: #e53935; }
 .field-error { color: #e53935; font-size: 0.82rem; margin-top: 4px; }
+.input-error { border-color: #e53935 !important; background: #fff5f5; }
 
 /* Table */
 .table-container {
@@ -1188,7 +1189,7 @@ tbody .col-name {
 .pos-add-row .form-input { flex: 1; }
 
 /* ── Employee stats modal ───────────────────────────── */
-.modal-stats { width: 640px; max-width: 95vw; }
+.modal-stats { width: 860px; max-width: 95vw; }
 
 .stats-table {
   width: 100%;
@@ -1216,6 +1217,12 @@ tbody .col-name {
   font-weight: 700;
   border-top: 2px solid #1a3c5e;
   border-bottom: none;
+}
+
+.stats-footnote {
+  margin-top: 10px;
+  font-size: 0.78rem;
+  color: #888;
 }
 
 /* ── Users admin modal (edit form) ──────────────────── */
