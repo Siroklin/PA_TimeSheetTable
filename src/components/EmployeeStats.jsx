@@ -1,19 +1,21 @@
 import { splitCode } from '../mockData';
 
-// Единый справочник кодов: описание + участие в факт/нормочасах.
+// Единый справочник кодов: описание + участие в фактических часах.
+// Нормочасы в этот справочник не входят — они считаются строго по паттерну
+// графика сотрудника (2x2/5-0/6-1/ДНОВ), независимо от кодов в ячейках.
 // '' — обычная смена (ячейка без буквенного кода, чистое число часов).
 const CODE_INFO = [
-  { code: '',   label: 'Обычная смена',       fact: true,  norm: true  },
-  { code: 'В',  label: 'Выходной',             fact: false, norm: false },
-  { code: 'О',  label: 'Отпуск',               fact: true,  norm: true  },
-  { code: 'Б',  label: 'Больничный',           fact: false, norm: true  },
-  { code: 'ДО', label: 'Отпуск за свой счёт',  fact: false, norm: false },
-  { code: 'П',  label: 'Прогул',               fact: false, norm: false },
-  { code: 'К',  label: 'Командировка',         fact: true,  norm: true  },
-  { code: 'Д',  label: 'Доп. смена',           fact: true,  norm: true  },
-  { code: 'С',  label: 'Сверхурочные',         fact: true,  norm: false },
-  { code: 'Ф',  label: 'ФМС',                  fact: false, norm: false },
-  { code: 'У',  label: 'Увольнение',           fact: false, norm: false },
+  { code: '',   label: 'Обычная смена',       fact: true  },
+  { code: 'В',  label: 'Выходной',             fact: false },
+  { code: 'О',  label: 'Отпуск',               fact: true  },
+  { code: 'Б',  label: 'Больничный',           fact: false },
+  { code: 'ДО', label: 'Отпуск за свой счёт',  fact: false },
+  { code: 'П',  label: 'Прогул',               fact: false },
+  { code: 'К',  label: 'Командировка',         fact: true  },
+  { code: 'Д',  label: 'Доп. смена',           fact: true  },
+  { code: 'С',  label: 'Сверхурочные',         fact: true  },
+  { code: 'Ф',  label: 'ФМС',                  fact: false },
+  { code: 'У',  label: 'Увольнение',           fact: false },
 ];
 const CODE_RULES = Object.fromEntries(CODE_INFO.map(c => [c.code, c]));
 
@@ -63,7 +65,7 @@ function computeStats(employees, schedule, patterns, year, month) {
       : null;
     const defaultHours = pat ? patternToHours(pat.pattern) : 8;
 
-    let dayShifts = 0, nightShifts = 0, normHours = 0, factHours = 0;
+    let dayShifts = 0, nightShifts = 0, factHours = 0;
     for (let d = 1; d <= daysInMonth; d++) {
       const cell = sched[d] ?? {};
 
@@ -75,7 +77,6 @@ function computeStats(employees, schedule, patterns, year, month) {
         if (code !== '' && !PER_SLOT_CODES.has(code)) continue;
         const rule = CODE_RULES[code];
         const h = hours ?? defaultHours;
-        if (rule.norm) normHours += h;
         if (rule.fact) factHours += h;
         if (code === '') { if (isDay) dayShifts += 1; else nightShifts += 1; }
       }
@@ -88,12 +89,15 @@ function computeStats(employees, schedule, patterns, year, month) {
       if (dayAbsCode) {
         const rule = CODE_RULES[dayAbsCode];
         const h = patMap ? patMap[d] : defaultHours;
-        if (rule.norm) normHours += h;
         if (rule.fact) factHours += h;
       }
     }
 
-    const deviation = factHours - normHours;
+    // Нормочасы — строго по базовому графику (паттерну) сотрудника, не по
+    // отметкам в ячейках. Нет сохранённого паттерна на этот месяц → норма
+    // неизвестна (не подставляем никакое значение по умолчанию).
+    const normHours = patMap ? Object.values(patMap).reduce((sum, h) => sum + h, 0) : null;
+    const deviation = normHours !== null ? factHours - normHours : null;
     return { emp, dayShifts, nightShifts, shifts: dayShifts + nightShifts, normHours, factHours, deviation };
   });
 }
@@ -172,13 +176,17 @@ export default function EmployeeStats({ employees, schedule, patterns = {}, year
                   </tr>
                 </tfoot>
               </table>
-              <div className="stats-footnote">* Нормочасы — запланированные смены по графику (включая дни отпуска и больничного). Праздничные дни не учитываются.</div>
+              <div className="stats-footnote">
+                * Нормочасы считаются строго по базовому графику сотрудника (2×2, 5-0, 6-1, ДНОВ) и не зависят
+                от фактических отметок в ячейках. Если график на этот месяц не задан (не внесён через «Граф.»
+                и не унаследован при копировании месяца) — нормочасы не считаются, показывается «—».
+              </div>
 
               <details className="stats-legend">
-                <summary className="stats-legend-title">Как считаются коды статусов</summary>
+                <summary className="stats-legend-title">Как коды статусов считаются в факте</summary>
                 <table className="stats-legend-table">
                   <thead>
-                    <tr><th>Код</th><th>Статус</th><th>Учитывается в факт</th><th>Учитывается в нормочасах</th></tr>
+                    <tr><th>Код</th><th>Статус</th><th>Учитывается в факт</th></tr>
                   </thead>
                   <tbody>
                     {CODE_INFO.map(c => (
@@ -186,7 +194,6 @@ export default function EmployeeStats({ employees, schedule, patterns = {}, year
                         <td>{c.code || '—'}</td>
                         <td>{c.label}</td>
                         <td>{c.fact ? 'да' : 'нет'}</td>
-                        <td>{c.norm ? 'да' : 'нет'}</td>
                       </tr>
                     ))}
                   </tbody>
