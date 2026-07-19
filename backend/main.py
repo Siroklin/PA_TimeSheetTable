@@ -327,10 +327,29 @@ def create_employee(
         code=emp.code, department=emp.department
     ).first()
     if exists:
-        raise HTTPException(
-            status_code=400,
-            detail="Сотрудник с таким кодом уже существует в этом отделе",
-        )
+        # Код уже занят в отделе. Если у этого сотрудника нет записей графика
+        # за выбранный период — он неактивен (например, был уволен и не
+        # переносился при копировании месяцев). Это возвращение сотрудника,
+        # а не дубликат — реактивируем вместо ошибки.
+        has_entries_this_period = year and month and db.query(models.ScheduleEntry).filter_by(
+            employee_id=exists.id, year=year, month=month
+        ).first()
+        if has_entries_this_period:
+            raise HTTPException(
+                status_code=400,
+                detail="Сотрудник с таким кодом уже существует в этом отделе",
+            )
+        exists.name = emp.name
+        exists.position = emp.position
+        if year and month:
+            db.add(models.ScheduleEntry(
+                employee_id=exists.id, year=year, month=month, day=1,
+                day_status="", night_status="", day_comment="", night_comment="",
+            ))
+        db.commit()
+        db.refresh(exists)
+        return exists
+
     db_emp = models.Employee(**emp.model_dump())
     db.add(db_emp)
     db.flush()
@@ -380,6 +399,7 @@ def bulk_employees(
     for emp in employees:
         check_department_access(current_user, emp.department, db)
     added = 0
+    reactivated = 0
     for emp in employees:
         exists = db.query(models.Employee).filter_by(
             code=emp.code, department=emp.department
@@ -394,8 +414,22 @@ def bulk_employees(
                     day_status="", night_status="", day_comment="", night_comment="",
                 ))
             added += 1
+        elif year and month:
+            # Код уже занят, но за этот период у сотрудника нет записей
+            # графика (уволен/неактивен) — реактивируем вместо пропуска.
+            has_entries_this_period = db.query(models.ScheduleEntry).filter_by(
+                employee_id=exists.id, year=year, month=month
+            ).first()
+            if not has_entries_this_period:
+                exists.name = emp.name
+                exists.position = emp.position
+                db.add(models.ScheduleEntry(
+                    employee_id=exists.id, year=year, month=month, day=1,
+                    day_status="", night_status="", day_comment="", night_comment="",
+                ))
+                reactivated += 1
     db.commit()
-    return {"added": added}
+    return {"added": added, "reactivated": reactivated}
 
 
 @app.delete("/api/employees/{emp_id}")
