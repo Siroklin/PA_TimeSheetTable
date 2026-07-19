@@ -24,11 +24,16 @@ def _check_max_hours(value: Optional[str]) -> Optional[str]:
 
 class DepartmentCreate(BaseModel):
     name: str
+    no_night_shifts: bool = False
 
 
 class Department(DepartmentCreate):
     class Config:
         from_attributes = True
+
+
+class DepartmentUpdate(BaseModel):
+    no_night_shifts: Optional[bool] = None
 
 
 class LoginRequest(BaseModel):

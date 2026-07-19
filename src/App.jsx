@@ -53,6 +53,7 @@ export default function App() {
   });
 
   const [departments, setDepartments] = useState([]);
+  const [departmentsFull, setDepartmentsFull] = useState([]);
   const [employees, setEmployees]     = useState([]);
   const [scheduleMap, setScheduleMap]   = useState({});
   const [shiftsMap, setShiftsMap]       = useState({});
@@ -77,13 +78,16 @@ export default function App() {
 
   const visibleDepartments = user?.is_admin ? departments : (user?.departments ?? []);
   const canEdit = !!user && (user.is_admin || user.role !== 'view');
+  const noNightShifts = !!departmentsFull.find(d => d.name === filters.department)?.no_night_shifts;
 
   const loadDepartments = useCallback(async () => {
     try {
       const list = await fetchDepartments();
       setDepartments(list.map(d => d.name));
+      setDepartmentsFull(list);
     } catch {
       setDepartments([]);
+      setDepartmentsFull([]);
     }
   }, []);
 
@@ -314,6 +318,7 @@ export default function App() {
             year={year}
             month={month}
             readOnly={!canEdit}
+            noNightShifts={noNightShifts}
             onCellClick={handleCellClick}
             onFillClick={setFillingEmp}
             onDeleteEmployee={handleDeleteEmployee}
@@ -342,6 +347,7 @@ export default function App() {
       {fillingEmp && (
         <ScheduleFiller
           employee={fillingEmp} year={year} month={month}
+          noNightShifts={noNightShifts}
           onApply={handleFillApply} onClose={() => setFillingEmp(null)}
         />
       )}
@@ -382,7 +388,7 @@ export default function App() {
       )}
       {showManageDepartments && (
         <ManageDepartments
-          departments={departments}
+          departments={departmentsFull}
           onSuccess={loadDepartments}
           onClose={() => setShowManageDepartments(false)}
         />

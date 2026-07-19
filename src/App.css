@@ -1181,6 +1181,16 @@ tbody .col-name {
 }
 .btn-delete-pos:hover { color: #922b21; }
 
+.dept-no-night-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: #555;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
 .pos-add-row {
   display: flex;
   gap: 8px;

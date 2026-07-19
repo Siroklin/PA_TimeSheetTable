@@ -140,11 +140,19 @@ export function fetchDepartments() {
   return apiFetch('/api/departments');
 }
 
-export function addDepartment(name) {
+export function addDepartment(name, noNightShifts = false) {
   return apiFetch('/api/departments', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name }),
+    body: JSON.stringify({ name, no_night_shifts: noNightShifts }),
+  });
+}
+
+export function updateDepartment(name, patch) {
+  return apiFetch(`/api/departments/${encodeURIComponent(name)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(patch),
   });
 }
 

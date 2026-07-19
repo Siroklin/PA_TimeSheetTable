@@ -5,7 +5,8 @@ from .database import Base
 class Department(Base):
     __tablename__ = "departments"
 
-    name = Column(String(100), primary_key=True)
+    name            = Column(String(100), primary_key=True)
+    no_night_shifts = Column(Boolean, nullable=False, default=False)
 
 
 class User(Base):

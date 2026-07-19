@@ -45,7 +45,21 @@ def _migrate_add_user_role_column():
             ))
 
 
+def _migrate_add_department_columns():
+    """create_all() doesn't alter pre-existing tables — add the
+    'no_night_shifts' column to departments if upgrading from a version
+    without it."""
+    inspector = inspect(engine)
+    columns = {c["name"] for c in inspector.get_columns("departments")}
+    if "no_night_shifts" not in columns:
+        with engine.begin() as conn:
+            conn.execute(text(
+                "ALTER TABLE departments ADD COLUMN no_night_shifts BOOLEAN NOT NULL DEFAULT FALSE"
+            ))
+
+
 _migrate_add_user_role_column()
+_migrate_add_department_columns()
 
 LEGACY_DEPARTMENTS = ["Цех №1", "Цех №2", "Цех №3", "Склад", "ПроИнокс"]
 
@@ -225,8 +239,23 @@ def create_department(
     existing = db.get(models.Department, body.name)
     if existing:
         raise HTTPException(status_code=409, detail="Уже существует")
-    obj = models.Department(name=body.name)
+    obj = models.Department(name=body.name, no_night_shifts=body.no_night_shifts)
     db.add(obj)
+    db.commit()
+    db.refresh(obj)
+    return obj
+
+
+@app.patch("/api/departments/{name}", response_model=schemas.Department)
+def update_department(
+    name: str, body: schemas.DepartmentUpdate, db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    obj = db.get(models.Department, name)
+    if not obj:
+        raise HTTPException(status_code=404, detail="Not found")
+    if body.no_night_shifts is not None:
+        obj.no_night_shifts = body.no_night_shifts
     db.commit()
     db.refresh(obj)
     return obj

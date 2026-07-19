@@ -25,7 +25,8 @@ function buildPreview(pattern, year, month, startDate, shift) {
   });
 }
 
-export default function ScheduleFiller({ employee, year, month, onApply, onClose }) {
+export default function ScheduleFiller({ employee, year, month, noNightShifts = false, onApply, onClose }) {
+  const patterns = noNightShifts ? PATTERNS.filter(p => p.id !== 'ДНОВ') : PATTERNS;
   const [pattern, setPattern] = useState('2x2');
   const [shift, setShift] = useState('day');
   const [startDate, setStartDate] = useState(
@@ -58,8 +59,9 @@ export default function ScheduleFiller({ employee, year, month, onApply, onClose
         </div>
 
         <div className="modal-body">
-          {/* Shift selector — hidden for ДНОВ (fills both columns) */}
-          {!isDNOV && (
+          {/* Shift selector — hidden for ДНОВ (fills both columns) and for
+              departments without night shifts (always day) */}
+          {!isDNOV && !noNightShifts && (
             <>
               <div className="filler-section-label">Смена сотрудника</div>
               <div className="shift-toggle">
@@ -82,7 +84,7 @@ export default function ScheduleFiller({ employee, year, month, onApply, onClose
           {/* Pattern selector */}
           <div className="filler-section-label">Тип графика</div>
           <div className="pattern-btns">
-            {PATTERNS.map(p => (
+            {patterns.map(p => (
               <button
                 key={p.id}
                 className={`pattern-btn ${pattern === p.id ? 'active' : ''}`}
@@ -124,13 +126,15 @@ export default function ScheduleFiller({ employee, year, month, onApply, onClose
                 >
                   {day}
                 </div>
-                <div
-                  className="preview-val preview-val-night"
-                  style={{ backgroundColor: getCellColor(night, true) }}
-                  title="Ночь"
-                >
-                  {night}
-                </div>
+                {!noNightShifts && (
+                  <div
+                    className="preview-val preview-val-night"
+                    style={{ backgroundColor: getCellColor(night, true) }}
+                    title="Ночь"
+                  >
+                    {night}
+                  </div>
+                )}
               </div>
             ))}
           </div>

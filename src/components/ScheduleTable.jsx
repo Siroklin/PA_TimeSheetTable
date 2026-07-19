@@ -12,7 +12,7 @@ function isWeekend(year, month, day) {
 }
 
 export default function ScheduleTable({
-  employees, schedule, year, month, readOnly = false,
+  employees, schedule, year, month, readOnly = false, noNightShifts = false,
   onCellClick, onFillClick, onDeleteEmployee, onEditEmployee,
 }) {
   const daysInMonth = new Date(year, month, 0).getDate();
@@ -23,19 +23,21 @@ export default function ScheduleTable({
       <table className="schedule-table">
         <thead>
           <tr className="header-row-days">
-            <th className="col-name" rowSpan={2}>ФИО сотрудника</th>
+            <th className="col-name" rowSpan={noNightShifts ? 1 : 2}>ФИО сотрудника</th>
             {days.map(d => (
-              <th key={d} colSpan={2} className={`day-header ${isWeekend(year, month, d) ? 'weekend' : ''}`}>
+              <th key={d} colSpan={noNightShifts ? 1 : 2} className={`day-header ${isWeekend(year, month, d) ? 'weekend' : ''}`}>
                 <div className="day-num">{d}</div>
                 <div className="day-name">{DAY_NAMES[getDayOfWeek(year, month, d)]}</div>
               </th>
             ))}
           </tr>
-          <tr className="header-row-shifts">
-            {days.map(d => (
-              <ShiftHeaders key={d} />
-            ))}
-          </tr>
+          {!noNightShifts && (
+            <tr className="header-row-shifts">
+              {days.map(d => (
+                <ShiftHeaders key={d} />
+              ))}
+            </tr>
+          )}
         </thead>
         <tbody>
           {employees.map((emp, idx) => {
@@ -88,6 +90,7 @@ export default function ScheduleTable({
                       dayComment={cell.dayComment ?? ''}
                       nightComment={cell.nightComment ?? ''}
                       isWeekend={isWeekend(year, month, d)}
+                      noNightShifts={noNightShifts}
                       onDayClick={readOnly ? undefined : () => onCellClick(emp, d, 'day')}
                       onNightClick={readOnly ? undefined : () => onCellClick(emp, d, 'night')}
                     />
@@ -111,7 +114,7 @@ function ShiftHeaders() {
   );
 }
 
-function DayCells({ dayVal, nightVal, dayComment, nightComment, isWeekend, onDayClick, onNightClick }) {
+function DayCells({ dayVal, nightVal, dayComment, nightComment, isWeekend, noNightShifts, onDayClick, onNightClick }) {
   const isTerminated = splitCode(dayVal).code === 'У' || splitCode(nightVal).code === 'У';
   const dayColor = isTerminated ? SHIFT_COLORS['У'] : getCellColor(dayVal, false);
   const nightColor = isTerminated ? SHIFT_COLORS['У'] : getCellColor(nightVal, true);
@@ -126,15 +129,17 @@ function DayCells({ dayVal, nightVal, dayComment, nightComment, isWeekend, onDay
         {dayVal}
         {dayComment && <span className="comment-dot" />}
       </td>
-      <td
-        className="cell cell-night"
-        style={{ backgroundColor: nightColor }}
-        onClick={onNightClick}
-        title={nightComment || undefined}
-      >
-        {nightVal}
-        {nightComment && <span className="comment-dot" />}
-      </td>
+      {!noNightShifts && (
+        <td
+          className="cell cell-night"
+          style={{ backgroundColor: nightColor }}
+          onClick={onNightClick}
+          title={nightComment || undefined}
+        >
+          {nightVal}
+          {nightComment && <span className="comment-dot" />}
+        </td>
+      )}
     </>
   );
 }
