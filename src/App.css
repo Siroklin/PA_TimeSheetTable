@@ -1225,6 +1225,40 @@ tbody .col-name {
   color: #888;
 }
 
+.stats-legend {
+  margin-top: 12px;
+  font-size: 0.8rem;
+}
+
+.stats-legend-title {
+  cursor: pointer;
+  color: #1a3c5e;
+  font-weight: 600;
+}
+
+.stats-legend-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+  font-size: 0.78rem;
+}
+
+.stats-legend-table th, .stats-legend-table td {
+  padding: 5px 10px;
+  border-bottom: 1px solid #e5e9ed;
+  text-align: left;
+}
+
+.stats-legend-table th:not(:first-child):not(:nth-child(2)),
+.stats-legend-table td:not(:first-child):not(:nth-child(2)) {
+  text-align: center;
+}
+
+.stats-legend-table thead th {
+  background: #f1f4f7;
+  font-weight: 700;
+}
+
 /* ── Users admin modal (edit form) ──────────────────── */
 .modal-users-edit { width: 540px; max-width: 95vw; }
 

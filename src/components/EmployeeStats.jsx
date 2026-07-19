@@ -1,6 +1,27 @@
 import { splitCode } from '../mockData';
 
+// Единый справочник кодов: описание + участие в факт/нормочасах.
+// '' — обычная смена (ячейка без буквенного кода, чистое число часов).
+const CODE_INFO = [
+  { code: '',   label: 'Обычная смена',       fact: true,  norm: true  },
+  { code: 'В',  label: 'Выходной',             fact: false, norm: false },
+  { code: 'О',  label: 'Отпуск',               fact: true,  norm: true  },
+  { code: 'Б',  label: 'Больничный',           fact: false, norm: true  },
+  { code: 'ДО', label: 'Отпуск за свой счёт',  fact: false, norm: false },
+  { code: 'П',  label: 'Прогул',               fact: false, norm: false },
+  { code: 'К',  label: 'Командировка',         fact: true,  norm: true  },
+  { code: 'Д',  label: 'Доп. смена',           fact: true,  norm: true  },
+  { code: 'С',  label: 'Сверхурочные',         fact: true,  norm: false },
+  { code: 'Ф',  label: 'ФМС',                  fact: false, norm: false },
+  { code: 'У',  label: 'Увольнение',           fact: false, norm: false },
+];
+const CODE_RULES = Object.fromEntries(CODE_INFO.map(c => [c.code, c]));
+
+// Коды, которые считаются как «плановый день» по паттерну графика (часы не из
+// ячейки, а из графика на этот конкретный день) — статус на весь день, а не на слот.
 const PAID_ABSENCE_CODES = new Set(['О', 'Б']);
+// Коды, которые считаются по слотам (день/ночь) с часами, введёнными в ячейке.
+const PER_SLOT_CODES = new Set(['К', 'Д', 'С']);
 
 // Возвращает {day: hours} — сколько часов по паттерну на каждый день месяца
 function buildPatternMap(pattern, startDateStr, year, month) {
@@ -27,12 +48,6 @@ function buildPatternMap(pattern, startDateStr, year, month) {
   return map;
 }
 
-function absenceHours(value, defaultHours) {
-  if (!value) return 0;
-  const { code, hours } = splitCode(value);
-  return PAID_ABSENCE_CODES.has(code) ? (hours ?? defaultHours) : 0;
-}
-
 const PATTERN_HOURS = { '5-0': 8 };
 function patternToHours(pattern) {
   return PATTERN_HOURS[pattern] ?? 11;
@@ -51,24 +66,30 @@ function computeStats(employees, schedule, patterns, year, month) {
     let dayShifts = 0, nightShifts = 0, normHours = 0, factHours = 0;
     for (let d = 1; d <= daysInMonth; d++) {
       const cell = sched[d] ?? {};
-      // Рабочие смены — в норму и в факт
+
+      // Обычные смены, командировка, доп. смена, сверхурочные — по слотам
+      // (день/ночь), часы берутся из введённого в ячейке значения.
       for (const [val, isDay] of [[cell.day, true], [cell.nightShift, false]]) {
         if (!val) continue;
         const { code, hours } = splitCode(val);
-        if (code === '') {
-          const h = hours ?? defaultHours;
-          normHours += h;
-          factHours += h;
-          if (isDay) dayShifts += 1; else nightShifts += 1;
-        }
+        if (code !== '' && !PER_SLOT_CODES.has(code)) continue;
+        const rule = CODE_RULES[code];
+        const h = hours ?? defaultHours;
+        if (rule.norm) normHours += h;
+        if (rule.fact) factHours += h;
+        if (code === '') { if (isDay) dayShifts += 1; else nightShifts += 1; }
       }
-      // О/Б: по паттерну для этого дня (выходной → 0ч, рабочий → часы смены)
-      // В норму не идут, только в факт
-      const hasAbsence = absenceHours(cell.day, 1) > 0 || absenceHours(cell.nightShift, 1) > 0;
-      if (hasAbsence) {
+
+      // Отпуск/больничный — статус на весь день, часы берутся по паттерну
+      // графика на этот день (выходной по графику → 0ч, рабочий → часы смены)
+      const dayAbsCode = PAID_ABSENCE_CODES.has(splitCode(cell.day).code) ? splitCode(cell.day).code
+        : PAID_ABSENCE_CODES.has(splitCode(cell.nightShift).code) ? splitCode(cell.nightShift).code
+        : null;
+      if (dayAbsCode) {
+        const rule = CODE_RULES[dayAbsCode];
         const h = patMap ? patMap[d] : defaultHours;
-        normHours += h; // рабочий день по паттерну — должен был быть отработан
-        factHours += h;
+        if (rule.norm) normHours += h;
+        if (rule.fact) factHours += h;
       }
     }
 
@@ -152,6 +173,25 @@ export default function EmployeeStats({ employees, schedule, patterns = {}, year
                 </tfoot>
               </table>
               <div className="stats-footnote">* Нормочасы — запланированные смены по графику (включая дни отпуска и больничного). Праздничные дни не учитываются.</div>
+
+              <details className="stats-legend">
+                <summary className="stats-legend-title">Как считаются коды статусов</summary>
+                <table className="stats-legend-table">
+                  <thead>
+                    <tr><th>Код</th><th>Статус</th><th>Учитывается в факт</th><th>Учитывается в нормочасах</th></tr>
+                  </thead>
+                  <tbody>
+                    {CODE_INFO.map(c => (
+                      <tr key={c.code || 'work'}>
+                        <td>{c.code || '—'}</td>
+                        <td>{c.label}</td>
+                        <td>{c.fact ? 'да' : 'нет'}</td>
+                        <td>{c.norm ? 'да' : 'нет'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </details>
             </>
           )}
         </div>
