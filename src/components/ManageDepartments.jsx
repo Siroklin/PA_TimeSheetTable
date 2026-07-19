@@ -58,7 +58,7 @@ export default function ManageDepartments({ departments, onSuccess, onClose }) {
               <div className="pos-empty">Нет отделов</div>
             )}
             {(departments || []).map(d => (
-              <div key={d.name} className="pos-list-item">
+              <div key={d.name} className="pos-list-item settings-row">
                 <span>{d.name}</span>
                 <label className="dept-no-night-toggle">
                   <input

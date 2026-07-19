@@ -1142,7 +1142,7 @@ tbody .col-name {
 }
 
 /* ── Manage positions modal ────────────────────────── */
-.modal-add-pos { max-width: 420px; }
+.modal-add-pos { width: 480px; max-width: 95vw; }
 
 .pos-list {
   border: 1px solid #dde2e8;
@@ -1169,6 +1169,22 @@ tbody .col-name {
   border-bottom: 1px solid #f0f0f0;
 }
 .pos-list-item:last-child { border-bottom: none; }
+
+/* Grid variant — name pinned left, option (e.g. checkbox) pinned right,
+   delete/edit button pinned to a fixed last column, so rows line up evenly
+   regardless of how long the name or label text is. */
+.settings-row {
+  display: grid;
+  grid-template-columns: 1fr auto 28px;
+  gap: 12px;
+}
+.settings-row > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.settings-row .dept-no-night-toggle { grid-column: 2; justify-self: end; }
+.settings-row .btn-delete-pos { grid-column: 3; justify-self: center; }
 
 .btn-delete-pos {
   background: none;

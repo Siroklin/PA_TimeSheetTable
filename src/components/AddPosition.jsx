@@ -57,7 +57,7 @@ export default function AddPosition({ department, departments, positions, isAdmi
               <div className="pos-empty">Нет должностей для этого отдела</div>
             )}
             {positions.map(p => (
-              <div key={p.id} className="pos-list-item">
+              <div key={p.id} className="pos-list-item settings-row">
                 <span>{p.position}</span>
                 {isAdmin && (
                   <button className="btn-delete-pos" onClick={() => handleDelete(p)}>×</button>
