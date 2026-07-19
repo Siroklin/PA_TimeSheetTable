@@ -147,7 +147,13 @@ export default function EmployeeUpload({ departments, year, month, onSuccess, on
           <div className="upload-actions-row">
             <label className="btn-file-upload">
               Выбрать файл (.xlsx / .csv)
-              <input type="file" accept=".xlsx,.xls,.csv,.txt" onChange={handleFileChange} hidden />
+              <input
+                type="file"
+                accept=".xlsx,.xls,.csv,.txt"
+                onClick={e => { e.target.value = null; }}
+                onChange={handleFileChange}
+                hidden
+              />
             </label>
             <span className="upload-or">или вставьте CSV текст ниже</span>
           </div>
