@@ -58,8 +58,21 @@ def _migrate_add_department_columns():
             ))
 
 
+def _migrate_add_employee_email_column():
+    """create_all() doesn't alter pre-existing tables — add the 'email'
+    column to employees if upgrading from a version without it."""
+    inspector = inspect(engine)
+    columns = {c["name"] for c in inspector.get_columns("employees")}
+    if "email" not in columns:
+        with engine.begin() as conn:
+            conn.execute(text(
+                "ALTER TABLE employees ADD COLUMN email VARCHAR(200) NOT NULL DEFAULT ''"
+            ))
+
+
 _migrate_add_user_role_column()
 _migrate_add_department_columns()
+_migrate_add_employee_email_column()
 
 LEGACY_DEPARTMENTS = ["Цех №1", "Цех №2", "Цех №3", "Склад", "ПроИнокс"]
 
@@ -365,6 +378,7 @@ def create_employee(
             )
         exists.name = emp.name
         exists.position = emp.position
+        exists.email = emp.email
         if year and month:
             db.add(models.ScheduleEntry(
                 employee_id=exists.id, year=year, month=month, day=1,
@@ -447,6 +461,7 @@ def bulk_employees(
             if not has_entries_this_period:
                 exists.name = emp.name
                 exists.position = emp.position
+                exists.email = emp.email
                 db.add(models.ScheduleEntry(
                     employee_id=exists.id, year=year, month=month, day=1,
                     day_status="", night_status="", day_comment="", night_comment="",

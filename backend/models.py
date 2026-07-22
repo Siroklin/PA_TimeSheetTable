@@ -37,6 +37,7 @@ class Employee(Base):
     name       = Column(String(200), nullable=False)
     position   = Column(String(100), nullable=False)
     department = Column(String(100), ForeignKey("departments.name", ondelete="RESTRICT"), nullable=False, index=True)
+    email      = Column(String(200), nullable=False, default="")
 
 
 class DepartmentPosition(Base):

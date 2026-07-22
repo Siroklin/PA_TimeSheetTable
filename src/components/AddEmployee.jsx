@@ -6,8 +6,8 @@ export default function AddEmployee({ department, positions, employee, year, mon
   const firstPos = (positions && positions.length > 0) ? positions[0].position : '';
   const [form, setForm] = useState(
     isEdit
-      ? { code: employee.code, name: employee.name, position: employee.position }
-      : { code: '', name: '', position: firstPos }
+      ? { code: employee.code, name: employee.name, position: employee.position, email: employee.email ?? '' }
+      : { code: '', name: '', position: firstPos, email: '' }
   );
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState(null);
@@ -15,6 +15,9 @@ export default function AddEmployee({ department, positions, employee, year, mon
   function set(field, value) {
     setForm(prev => ({ ...prev, [field]: value }));
   }
+
+  const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+  const emailInvalid = form.email.trim() && !EMAIL_RE.test(form.email.trim());
 
   async function handleSave() {
     setSaving(true);
@@ -35,7 +38,7 @@ export default function AddEmployee({ department, positions, employee, year, mon
   }
 
   const codeHasSpace = /\s/.test(form.code);
-  const canSave = form.code.trim() && !codeHasSpace && form.name.trim() && form.position.trim();
+  const canSave = form.code.trim() && !codeHasSpace && form.name.trim() && form.position.trim() && !emailInvalid;
 
   return (
     <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
@@ -89,6 +92,20 @@ export default function AddEmployee({ department, positions, employee, year, mon
               Нет справочника должностей для этого отдела. Добавьте через Сервис → Управление должностями.
             </div>
           ) : null}
+
+          <div className="form-group">
+            <label>Email</label>
+            <input
+              className="form-input"
+              type="email"
+              value={form.email}
+              onChange={e => set('email', e.target.value)}
+              placeholder="ivanov@example.com"
+            />
+            {emailInvalid && (
+              <div className="field-error">Некорректный формат email</div>
+            )}
+          </div>
 
           {error && (
             <div className="upload-errors" style={{ marginTop: 12 }}>

@@ -2,9 +2,9 @@ import { useState } from 'react';
 import * as XLSX from 'xlsx';
 import { uploadEmployees } from '../api';
 
-const EXAMPLE = `001,Цех №1,Иванов Иван Иванович,Оператор
-002,Склад,Петрова Мария Сергеевна,Кладовщик
-003,ПроИнокс,Козлов Андрей Павлович,Технолог`;
+const EXAMPLE = `001,Цех №1,Иванов Иван Иванович,Оператор,ivanov@example.com
+002,Склад,Петрова Мария Сергеевна,Кладовщик,
+003,ПроИнокс,Козлов Андрей Павлович,Технолог,`;
 
 // Header aliases: Excel column name → internal field
 const HEADER_MAP = {
@@ -12,7 +12,10 @@ const HEADER_MAP = {
   'отдел': 'department', 'department': 'department', 'подразделение': 'department',
   'фио': 'name', 'имя': 'name', 'name': 'name', 'ф.и.о.': 'name',
   'должность': 'position', 'position': 'position',
+  'email': 'email', 'e-mail': 'email', 'почта': 'email',
 };
+
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
 function parseXlsx(buffer, departments) {
   const wb = XLSX.read(buffer, { type: 'array' });
@@ -32,7 +35,7 @@ function parseXlsx(buffer, departments) {
   const dataRows = hasHeader ? raw.slice(1) : raw;
   const fieldOrder = hasHeader
     ? mappedHeaders  // null means skip that column
-    : ['code', 'department', 'name', 'position']; // positional fallback
+    : ['code', 'department', 'name', 'position', 'email']; // positional fallback
 
   dataRows.forEach((row, idx) => {
     const lineNum = hasHeader ? idx + 2 : idx + 1;
@@ -41,7 +44,7 @@ function parseXlsx(buffer, departments) {
       if (field) obj[field] = String(row[i] ?? '').trim();
     });
 
-    const { code, department, name, position } = obj;
+    const { code, department, name, position, email = '' } = obj;
     if (!code || !department || !name || !position) {
       errors.push(`Строка ${lineNum}: не заполнены обязательные поля (код, отдел, ФИО, должность)`);
       return;
@@ -50,7 +53,11 @@ function parseXlsx(buffer, departments) {
       errors.push(`Строка ${lineNum}: неизвестный отдел «${department}». Допустимые: ${departments.join(', ')}`);
       return;
     }
-    rows.push({ code, department, name, position });
+    if (email && !EMAIL_RE.test(email)) {
+      errors.push(`Строка ${lineNum}: некорректный email «${email}»`);
+      return;
+    }
+    rows.push({ code, department, name, position, email });
   });
 
   return { rows, errors };
@@ -63,15 +70,19 @@ function parseCsv(text, departments) {
   text.trim().split('\n').forEach((line, idx) => {
     const parts = line.split(',').map(s => s.trim());
     if (parts.length < 4) {
-      errors.push(`Строка ${idx + 1}: ожидается 4 колонки (код,отдел,ФИО,должность)`);
+      errors.push(`Строка ${idx + 1}: ожидается минимум 4 колонки (код,отдел,ФИО,должность[,email])`);
       return;
     }
-    const [code, department, name, position] = parts;
+    const [code, department, name, position, email = ''] = parts;
     if (!departments.includes(department)) {
       errors.push(`Строка ${idx + 1}: неизвестный отдел «${department}». Допустимые: ${departments.join(', ')}`);
       return;
     }
-    rows.push({ code, department, name, position });
+    if (email && !EMAIL_RE.test(email)) {
+      errors.push(`Строка ${idx + 1}: некорректный email «${email}»`);
+      return;
+    }
+    rows.push({ code, department, name, position, email });
   });
 
   return { rows, errors };
@@ -134,7 +145,7 @@ export default function EmployeeUpload({ departments, year, month, onSuccess, on
       <div className="modal modal-upload">
         <div className="modal-header">
           <div className="modal-title">Загрузка списка сотрудников</div>
-          <div className="modal-subtitle">Формат: код, отдел, ФИО, должность</div>
+          <div className="modal-subtitle">Формат: код, отдел, ФИО, должность, email (необязательно)</div>
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
 
@@ -182,7 +193,7 @@ export default function EmployeeUpload({ departments, year, month, onSuccess, on
               <div className="upload-preview-table-wrap">
                 <table className="upload-preview-table">
                   <thead>
-                    <tr><th>Код</th><th>Отдел</th><th>ФИО</th><th>Должность</th></tr>
+                    <tr><th>Код</th><th>Отдел</th><th>ФИО</th><th>Должность</th><th>Email</th></tr>
                   </thead>
                   <tbody>
                     {parsed.map((r, i) => (
@@ -191,6 +202,7 @@ export default function EmployeeUpload({ departments, year, month, onSuccess, on
                         <td>{r.department}</td>
                         <td>{r.name}</td>
                         <td>{r.position}</td>
+                        <td>{r.email}</td>
                       </tr>
                     ))}
                   </tbody>

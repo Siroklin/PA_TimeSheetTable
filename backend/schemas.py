@@ -10,6 +10,15 @@ def _no_spaces(value: Optional[str]) -> Optional[str]:
     return value
 
 
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+def _check_email(value: Optional[str]) -> Optional[str]:
+    if value and not _EMAIL_RE.match(value):
+        raise ValueError("Некорректный формат email")
+    return value
+
+
 _HOUR_VALUE_RE = re.compile(r"^(\D*)(\d+)?$")
 
 
@@ -92,8 +101,10 @@ class EmployeeCreate(BaseModel):
     name: str
     position: str
     department: str
+    email: str = ""
 
     _validate_code = field_validator("code")(_no_spaces)
+    _validate_email = field_validator("email")(_check_email)
 
 
 class Employee(EmployeeCreate):
@@ -107,8 +118,10 @@ class EmployeeUpdate(BaseModel):
     code: Optional[str] = None
     name: Optional[str] = None
     position: Optional[str] = None
+    email: Optional[str] = None
 
     _validate_code = field_validator("code")(_no_spaces)
+    _validate_email = field_validator("email")(_check_email)
 
 
 class CellUpdate(BaseModel):
