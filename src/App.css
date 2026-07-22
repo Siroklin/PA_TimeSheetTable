@@ -1175,7 +1175,7 @@ tbody .col-name {
    regardless of how long the name or label text is. */
 .settings-row {
   display: grid;
-  grid-template-columns: 1fr auto 28px;
+  grid-template-columns: 1fr auto 22px 28px;
   gap: 12px;
 }
 .settings-row > span:first-child {
@@ -1183,8 +1183,13 @@ tbody .col-name {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.settings-row > .form-input {
+  grid-column: 1;
+  min-width: 0;
+}
 .settings-row .dept-no-night-toggle { grid-column: 2; justify-self: end; }
-.settings-row .btn-delete-pos { grid-column: 3; justify-self: center; }
+.settings-row .btn-edit-emp { grid-column: 3; justify-self: center; }
+.settings-row .btn-delete-pos { grid-column: 4; justify-self: center; }
 
 .btn-delete-pos {
   background: none;

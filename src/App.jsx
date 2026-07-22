@@ -390,6 +390,9 @@ export default function App() {
         <ManageDepartments
           departments={departmentsFull}
           onSuccess={loadDepartments}
+          onRename={(oldName, newName) => {
+            setFilters(prev => (prev.department === oldName ? { ...prev, department: newName } : prev));
+          }}
           onClose={() => setShowManageDepartments(false)}
         />
       )}

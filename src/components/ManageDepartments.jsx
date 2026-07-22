@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { addDepartment, deleteDepartment, updateDepartment } from '../api';
 
-export default function ManageDepartments({ departments, onSuccess, onClose }) {
+export default function ManageDepartments({ departments, onSuccess, onRename, onClose }) {
   const [newName, setNewName]               = useState('');
   const [newNoNightShifts, setNewNoNightShifts] = useState(false);
   const [saving, setSaving]   = useState(false);
   const [error, setError]     = useState(null);
+  const [editingName, setEditingName] = useState(null);
+  const [editValue, setEditValue]     = useState('');
 
   async function handleAdd() {
     if (!newName.trim()) return;
@@ -44,6 +46,31 @@ export default function ManageDepartments({ departments, onSuccess, onClose }) {
     }
   }
 
+  function startEdit(name) {
+    setError(null);
+    setEditingName(name);
+    setEditValue(name);
+  }
+
+  function cancelEdit() {
+    setEditingName(null);
+    setEditValue('');
+  }
+
+  async function handleRename(name) {
+    const trimmed = editValue.trim();
+    if (!trimmed || trimmed === name) { cancelEdit(); return; }
+    setError(null);
+    try {
+      await updateDepartment(name, { name: trimmed });
+      cancelEdit();
+      onRename?.(name, trimmed);
+      onSuccess();
+    } catch (e) {
+      setError(e.message.includes('409') ? 'Такой отдел уже существует.' : 'Ошибка при переименовании.');
+    }
+  }
+
   return (
     <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="modal modal-add-pos">
@@ -59,7 +86,21 @@ export default function ManageDepartments({ departments, onSuccess, onClose }) {
             )}
             {(departments || []).map(d => (
               <div key={d.name} className="pos-list-item settings-row">
-                <span>{d.name}</span>
+                {editingName === d.name ? (
+                  <input
+                    className="form-input"
+                    autoFocus
+                    value={editValue}
+                    onChange={e => setEditValue(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') handleRename(d.name);
+                      if (e.key === 'Escape') cancelEdit();
+                    }}
+                    onBlur={() => handleRename(d.name)}
+                  />
+                ) : (
+                  <span>{d.name}</span>
+                )}
                 <label className="dept-no-night-toggle">
                   <input
                     type="checkbox"
@@ -68,6 +109,7 @@ export default function ManageDepartments({ departments, onSuccess, onClose }) {
                   />
                   Нет ночных смен
                 </label>
+                <button className="btn-edit-emp" onClick={() => startEdit(d.name)} title="Переименовать">✎</button>
                 <button className="btn-delete-pos" onClick={() => handleDelete(d.name)}>×</button>
               </div>
             ))}

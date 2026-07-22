@@ -33,6 +33,7 @@ class Department(DepartmentCreate):
 
 
 class DepartmentUpdate(BaseModel):
+    name: Optional[str] = None
     no_night_shifts: Optional[bool] = None
 
 

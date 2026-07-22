@@ -249,11 +249,35 @@ def create_department(
 @app.patch("/api/departments/{name}", response_model=schemas.Department)
 def update_department(
     name: str, body: schemas.DepartmentUpdate, db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_admin),
 ):
     obj = db.get(models.Department, name)
     if not obj:
         raise HTTPException(status_code=404, detail="Not found")
+
+    new_name = body.name.strip() if body.name is not None else None
+    if new_name and new_name != name:
+        if db.get(models.Department, new_name):
+            raise HTTPException(status_code=409, detail="Уже существует")
+        # departments.name is referenced by FK from employees/user_departments/
+        # department_positions without ON UPDATE CASCADE, so renaming in place
+        # would violate those constraints. Instead: insert the new row first,
+        # repoint every child row at it, then drop the old row.
+        new_obj = models.Department(name=new_name, no_night_shifts=obj.no_night_shifts)
+        db.add(new_obj)
+        db.flush()
+        db.query(models.Employee).filter_by(department=name).update(
+            {"department": new_name}, synchronize_session=False
+        )
+        db.query(models.UserDepartment).filter_by(department=name).update(
+            {"department": new_name}, synchronize_session=False
+        )
+        db.query(models.DepartmentPosition).filter_by(department=name).update(
+            {"department": new_name}, synchronize_session=False
+        )
+        db.delete(obj)
+        obj = new_obj
+
     if body.no_night_shifts is not None:
         obj.no_night_shifts = body.no_night_shifts
     db.commit()
