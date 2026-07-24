@@ -66,8 +66,11 @@ function computeStats(employees, schedule, patterns, year, month) {
     const defaultHours = pat ? patternToHours(pat.pattern) : 8;
 
     let dayShifts = 0, nightShifts = 0, factHours = 0;
+    let overtimeHours = 0;
+    const overtimeDays = [];
     for (let d = 1; d <= daysInMonth; d++) {
       const cell = sched[d] ?? {};
+      let workedHoursToday = 0;
 
       // Обычные смены, командировка, доп. смена, сверхурочные — по слотам
       // (день/ночь), часы берутся из введённого в ячейке значения.
@@ -79,6 +82,7 @@ function computeStats(employees, schedule, patterns, year, month) {
         const h = hours ?? defaultHours;
         if (rule.fact) factHours += h;
         if (code === '') { if (isDay) dayShifts += 1; else nightShifts += 1; }
+        workedHoursToday += h;
       }
 
       // Отпуск/больничный — статус на весь день, часы берутся по паттерну
@@ -91,6 +95,20 @@ function computeStats(employees, schedule, patterns, year, month) {
         const h = patMap ? patMap[d] : defaultHours;
         if (rule.fact) factHours += h;
       }
+
+      // Переработка: вышел в день, который по графику — выходной (весь
+      // отработанный день — переработка), либо отработал больше часов, чем
+      // положено по графику в рабочий день. Считается только при наличии
+      // сохранённого паттерна графика — без него неизвестно, сколько часов
+      // положено в этот день.
+      if (patMap) {
+        const expected = patMap[d] ?? 0;
+        const over = expected === 0 ? workedHoursToday : Math.max(0, workedHoursToday - expected);
+        if (over > 0) {
+          overtimeHours += over;
+          overtimeDays.push({ day: d, hours: over });
+        }
+      }
     }
 
     // Нормочасы — строго по базовому графику (паттерну) сотрудника, не по
@@ -98,7 +116,11 @@ function computeStats(employees, schedule, patterns, year, month) {
     // неизвестна (не подставляем никакое значение по умолчанию).
     const normHours = patMap ? Object.values(patMap).reduce((sum, h) => sum + h, 0) : null;
     const deviation = normHours !== null ? factHours - normHours : null;
-    return { emp, dayShifts, nightShifts, shifts: dayShifts + nightShifts, normHours, factHours, deviation };
+    return {
+      emp, dayShifts, nightShifts, shifts: dayShifts + nightShifts, normHours, factHours, deviation,
+      overtimeHours: patMap ? overtimeHours : null,
+      overtimeDays: patMap ? overtimeDays : [],
+    };
   });
 }
 
@@ -111,7 +133,8 @@ export default function EmployeeStats({ employees, schedule, patterns = {}, year
     normHours:   acc.normHours !== null && r.normHours !== null ? acc.normHours + r.normHours : null,
     factHours:   acc.factHours   + r.factHours,
     deviation:   acc.deviation !== null && r.deviation !== null ? acc.deviation + r.deviation : null,
-  }), { dayShifts: 0, nightShifts: 0, shifts: 0, normHours: 0, factHours: 0, deviation: 0 });
+    overtimeHours: acc.overtimeHours !== null && r.overtimeHours !== null ? acc.overtimeHours + r.overtimeHours : null,
+  }), { dayShifts: 0, nightShifts: 0, shifts: 0, normHours: 0, factHours: 0, deviation: 0, overtimeHours: 0 });
 
   const fmt = (v, pos = false) => {
     if (v === null) return '—';
@@ -144,6 +167,7 @@ export default function EmployeeStats({ employees, schedule, patterns = {}, year
                     <th>Нормочасы</th>
                     <th>Факт. часов</th>
                     <th>Отклонение</th>
+                    <th>Переработка</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -159,6 +183,12 @@ export default function EmployeeStats({ employees, schedule, patterns = {}, year
                       <td style={r.deviation > 0 ? { color: '#e53935', fontWeight: 600 } : {}}>
                         {fmt(r.deviation, true)}
                       </td>
+                      <td
+                        style={r.overtimeHours > 0 ? { color: '#e8590c', fontWeight: 600 } : {}}
+                        title={r.overtimeDays.length ? r.overtimeDays.map(o => `${o.day}: +${o.hours}ч`).join(', ') : undefined}
+                      >
+                        {r.overtimeHours === null ? '—' : (r.overtimeHours || '—')}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -173,6 +203,9 @@ export default function EmployeeStats({ employees, schedule, patterns = {}, year
                     <td style={totals.deviation > 0 ? { color: '#e53935', fontWeight: 600 } : {}}>
                       {fmt(totals.deviation, true)}
                     </td>
+                    <td style={totals.overtimeHours > 0 ? { color: '#e8590c', fontWeight: 600 } : {}}>
+                      {totals.overtimeHours === null ? '—' : (totals.overtimeHours || '—')}
+                    </td>
                   </tr>
                 </tfoot>
               </table>
@@ -180,6 +213,11 @@ export default function EmployeeStats({ employees, schedule, patterns = {}, year
                 * Нормочасы считаются строго по базовому графику сотрудника (2×2, 5-0, 6-1, ДНОВ) и не зависят
                 от фактических отметок в ячейках. Если график на этот месяц не задан (не внесён через «Граф.»
                 и не унаследован при копировании месяца) — нормочасы не считаются, показывается «—».
+              </div>
+              <div className="stats-footnote">
+                * Переработка — сумма часов за дни, когда сотрудник вышел в выходной по графику день, либо
+                отработал больше часов, чем положено в этот рабочий день по паттерну. Наведите на значение,
+                чтобы увидеть конкретные дни. Требует сохранённого паттерна графика на месяц, иначе — «—».
               </div>
 
               <details className="stats-legend">
