@@ -393,6 +393,21 @@ body {
   background: #1a3c5e !important;
 }
 
+thead .col-name.col-name-sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+thead .col-name.col-name-sortable:hover {
+  background: #24507e !important;
+}
+
+.sort-arrow {
+  margin-left: 6px;
+  font-size: 0.75em;
+  opacity: 0.85;
+}
+
 tbody .col-name {
   background: #f7f9fb !important;
   color: #1a3c5e;

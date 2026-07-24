@@ -73,6 +73,7 @@ export default function App() {
   const [showCopySchedule, setShowCopySchedule]   = useState(false);
   const [showClearSchedule, setShowClearSchedule] = useState(false);
   const [showStats, setShowStats]                 = useState(false);
+  const [nameSort, setNameSort] = useState(() => localStorage.getItem('scheduleNameSort') || null);
 
   const { year, month } = period;
 
@@ -157,8 +158,23 @@ export default function App() {
         return Object.values(sched).some(cell => isWorkValue(cell.nightShift));
       });
     }
+    if (nameSort) {
+      result = [...result].sort((a, b) => {
+        const cmp = a.name.localeCompare(b.name, 'ru');
+        return nameSort === 'asc' ? cmp : -cmp;
+      });
+    }
     return result;
-  }, [employees, filters.position, filters.shift, scheduleMap]);
+  }, [employees, filters.position, filters.shift, scheduleMap, nameSort]);
+
+  function handleToggleNameSort() {
+    setNameSort(prev => {
+      const next = prev === null ? 'asc' : prev === 'asc' ? 'desc' : null;
+      if (next) localStorage.setItem('scheduleNameSort', next);
+      else localStorage.removeItem('scheduleNameSort');
+      return next;
+    });
+  }
 
   function handleCellClick(emp, day, shiftType) {
     const cell = scheduleMap[emp.id]?.[day] ?? {};
@@ -323,6 +339,8 @@ export default function App() {
             onFillClick={setFillingEmp}
             onDeleteEmployee={handleDeleteEmployee}
             onEditEmployee={setEditingEmployee}
+            nameSort={nameSort}
+            onToggleNameSort={handleToggleNameSort}
           />
         </div>
       )}

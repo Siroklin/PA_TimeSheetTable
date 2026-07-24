@@ -14,6 +14,7 @@ function isWeekend(year, month, day) {
 export default function ScheduleTable({
   employees, schedule, year, month, readOnly = false, noNightShifts = false,
   onCellClick, onFillClick, onDeleteEmployee, onEditEmployee,
+  nameSort = null, onToggleNameSort,
 }) {
   const daysInMonth = new Date(year, month, 0).getDate();
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
@@ -23,7 +24,15 @@ export default function ScheduleTable({
       <table className="schedule-table">
         <thead>
           <tr className="header-row-days">
-            <th className="col-name" rowSpan={noNightShifts ? 1 : 2}>ФИО сотрудника</th>
+            <th
+              className={`col-name ${onToggleNameSort ? 'col-name-sortable' : ''}`}
+              rowSpan={noNightShifts ? 1 : 2}
+              onClick={onToggleNameSort}
+              title={onToggleNameSort ? 'Сортировать по ФИО' : undefined}
+            >
+              ФИО сотрудника
+              {nameSort && <span className="sort-arrow">{nameSort === 'asc' ? '▲' : '▼'}</span>}
+            </th>
             {days.map(d => (
               <th key={d} colSpan={noNightShifts ? 1 : 2} className={`day-header ${isWeekend(year, month, d) ? 'weekend' : ''}`}>
                 <div className="day-num">{d}</div>
