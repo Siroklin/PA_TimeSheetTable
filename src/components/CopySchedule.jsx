@@ -53,7 +53,7 @@ export default function CopySchedule({ department, fromYear, fromMonth, onSucces
         <div className="modal-body">
           <p className="copy-info">
             Сотрудники и их графики из <strong>{fromLabel}</strong> будут скопированы в выбранный период.
-            Скользящие графики (2×2, ДНОВ) продолжат цикл без разрыва.
+            Скользящие графики (2×2, ДНОВ, 13×1) продолжат цикл без разрыва.
           </p>
 
           <div className="copy-period-row">

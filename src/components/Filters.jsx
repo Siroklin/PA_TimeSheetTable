@@ -11,12 +11,12 @@ function getYears() {
 }
 
 export default function Filters({
-  filters, period, positions, departments, isAdmin, canEdit,
+  filters, period, positions, departments, tags, isAdmin, canEdit,
   onFilterChange, onPeriodChange,
   onAddEmployee, onUploadClick, onManagePositions, onManageDepartments, onManageUsers,
   onCopySchedule, onClearSchedule, onShowStats, onLogout,
 }) {
-  const { department, position, shift } = filters;
+  const { department, position, shift, tag } = filters;
   const { year, month } = period;
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -71,16 +71,24 @@ export default function Filters({
 
       <div className="filter-group">
         <label>Отдел</label>
-        <select value={department} onChange={e => onFilterChange({ department: e.target.value, position: 'all' })}>
+        <select value={department} onChange={e => onFilterChange({ department: e.target.value, position: 'all', tag: 'all' })}>
           {(departments || []).map(d => <option key={d} value={d}>{d}</option>)}
         </select>
       </div>
 
       <div className="filter-group">
         <label>Должность</label>
-        <select value={position} onChange={e => onFilterChange({ position: e.target.value })}>
+        <select value={position} onChange={e => onFilterChange({ position: e.target.value, tag: 'all' })}>
           <option value="all">Все должности</option>
           {(positions || []).map(p => <option key={p.id} value={p.position}>{p.position}</option>)}
+        </select>
+      </div>
+
+      <div className="filter-group">
+        <label>Тег</label>
+        <select value={tag} onChange={e => onFilterChange({ tag: e.target.value })}>
+          <option value="all">Все теги</option>
+          {(tags || []).map(t => <option key={t} value={t}>{t}</option>)}
         </select>
       </div>
 

@@ -98,6 +98,8 @@ export function applyPattern(pattern, year, month, options = {}) {
         val = (dow >= 1 && dow <= 6) ? '11' : 'В';
       } else if (pattern === '2x2') {
         val = (diffDays % 4) < 2 ? '11' : 'В';
+      } else if (pattern === '13x1') {
+        val = (diffDays % 14) === 0 ? 'В' : '11';
       }
       // Clear the unused column too, so switching shift mid-month doesn't
       // leave a stale value from the previous shift assignment.

@@ -102,6 +102,7 @@ class EmployeeCreate(BaseModel):
     position: str
     department: str
     email: str = ""
+    tag: str = ""
 
     _validate_code = field_validator("code")(_no_spaces)
     _validate_email = field_validator("email")(_check_email)
@@ -119,6 +120,7 @@ class EmployeeUpdate(BaseModel):
     name: Optional[str] = None
     position: Optional[str] = None
     email: Optional[str] = None
+    tag: Optional[str] = None
 
     _validate_code = field_validator("code")(_no_spaces)
     _validate_email = field_validator("email")(_check_email)
@@ -151,6 +153,6 @@ class SchedulePatternSave(BaseModel):
     employee_id: int
     year: int
     month: int
-    pattern: str        # '2x2' | 'ДНОВ' | '5-0' | '6-1'
+    pattern: str        # '2x2' | 'ДНОВ' | '5-0' | '6-1' | '13x1'
     shift: Optional[str] = None   # 'day' | 'night' | None for ДНОВ
     start_date: str     # 'YYYY-MM-DD'

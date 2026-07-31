@@ -38,6 +38,7 @@ class Employee(Base):
     position   = Column(String(100), nullable=False)
     department = Column(String(100), ForeignKey("departments.name", ondelete="RESTRICT"), nullable=False, index=True)
     email      = Column(String(200), nullable=False, default="")
+    tag        = Column(String(100), nullable=False, default="")
 
 
 class DepartmentPosition(Base):
@@ -58,7 +59,7 @@ class SchedulePattern(Base):
     employee_id = Column(Integer, nullable=False, index=True)
     year        = Column(Integer, nullable=False)
     month       = Column(Integer, nullable=False)
-    pattern     = Column(String(20), nullable=False)   # '2x2' | 'ДНОВ' | '5-0' | '6-1'
+    pattern     = Column(String(20), nullable=False)   # '2x2' | 'ДНОВ' | '5-0' | '6-1' | '13x1'
     shift       = Column(String(20), nullable=True)    # 'day' | 'night' | None (ДНОВ)
     start_date  = Column(String(20), nullable=False)   # 'YYYY-MM-DD'
 

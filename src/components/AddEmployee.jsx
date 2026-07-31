@@ -6,8 +6,8 @@ export default function AddEmployee({ department, positions, employee, year, mon
   const firstPos = (positions && positions.length > 0) ? positions[0].position : '';
   const [form, setForm] = useState(
     isEdit
-      ? { code: employee.code, name: employee.name, position: employee.position, email: employee.email ?? '' }
-      : { code: '', name: '', position: firstPos, email: '' }
+      ? { code: employee.code, name: employee.name, position: employee.position, email: employee.email ?? '', tag: employee.tag ?? '' }
+      : { code: '', name: '', position: firstPos, email: '', tag: '' }
   );
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState(null);
@@ -105,6 +105,16 @@ export default function AddEmployee({ department, positions, employee, year, mon
             {emailInvalid && (
               <div className="field-error">Некорректный формат email</div>
             )}
+          </div>
+
+          <div className="form-group">
+            <label>Тег</label>
+            <input
+              className="form-input"
+              value={form.tag}
+              onChange={e => set('tag', e.target.value)}
+              placeholder="Например: стажёр"
+            />
           </div>
 
           {error && (

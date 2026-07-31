@@ -70,9 +70,22 @@ def _migrate_add_employee_email_column():
             ))
 
 
+def _migrate_add_employee_tag_column():
+    """create_all() doesn't alter pre-existing tables — add the 'tag'
+    column to employees if upgrading from a version without it."""
+    inspector = inspect(engine)
+    columns = {c["name"] for c in inspector.get_columns("employees")}
+    if "tag" not in columns:
+        with engine.begin() as conn:
+            conn.execute(text(
+                "ALTER TABLE employees ADD COLUMN tag VARCHAR(100) NOT NULL DEFAULT ''"
+            ))
+
+
 _migrate_add_user_role_column()
 _migrate_add_department_columns()
 _migrate_add_employee_email_column()
+_migrate_add_employee_tag_column()
 
 LEGACY_DEPARTMENTS = ["Цех №1", "Цех №2", "Цех №3", "Склад", "ПроИнокс"]
 
@@ -379,6 +392,7 @@ def create_employee(
         exists.name = emp.name
         exists.position = emp.position
         exists.email = emp.email
+        exists.tag = emp.tag
         if year and month:
             db.add(models.ScheduleEntry(
                 employee_id=exists.id, year=year, month=month, day=1,
@@ -900,6 +914,11 @@ def _apply_pattern_py(pattern: str, year: int, month: int, shift: str | None, st
                     val = ''
                 else:
                     val = '11' if (diff % 4) < 2 else 'В'
+            elif pattern == '13x1':
+                if diff < 0:
+                    val = ''
+                else:
+                    val = 'В' if (diff % 14) == 0 else '11'
             else:
                 val = ''
 

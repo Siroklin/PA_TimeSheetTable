@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { applyPattern, getCellColor } from '../mockData';
 
 const PATTERNS = [
-  { id: '2x2',  label: '2×2',  desc: '2 рабочих / 2 выходных (скользящий)' },
-  { id: 'ДНОВ', label: 'ДНОВ', desc: 'День → Ночь → Отсыпной → Выходной' },
-  { id: '5-0',  label: '5-0',  desc: 'Пн–Пт работа, Сб–Вс выходной' },
-  { id: '6-1',  label: '6-1',  desc: 'Пн–Сб работа, Вс выходной' },
+  { id: '2x2',  label: '2×2',   desc: '2 рабочих / 2 выходных (скользящий)' },
+  { id: 'ДНОВ', label: 'ДНОВ',  desc: 'День → Ночь → Отсыпной → Выходной' },
+  { id: '5-0',  label: '5-0',   desc: 'Пн–Пт работа, Сб–Вс выходной' },
+  { id: '6-1',  label: '6-1',   desc: 'Пн–Сб работа, Вс выходной' },
+  { id: '13x1', label: '13×1',  desc: 'Работа каждый день, кроме каждого второго воскресенья' },
 ];
 
 const DOW_LABELS  = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
@@ -36,7 +37,8 @@ export default function ScheduleFiller({ employee, year, month, noNightShifts = 
   const parsedStart = new Date(startDate + 'T00:00:00');
   const preview = buildPreview(pattern, year, month, parsedStart, shift);
   const isDNOV = pattern === 'ДНОВ';
-  const isCycle = pattern === '2x2' || pattern === 'ДНОВ';
+  const is13x1 = pattern === '13x1';
+  const isCycle = pattern === '2x2' || pattern === 'ДНОВ' || is13x1;
 
   function handleApply() {
     const updates = applyPattern(pattern, year, month, { startDate: parsedStart, shift });
@@ -101,6 +103,7 @@ export default function ScheduleFiller({ employee, year, month, noNightShifts = 
           <div className="filler-start-row">
             <div className="filler-section-label">
               {isDNOV ? 'Начало цикла (первый рабочий день — Д)'
+                : is13x1 ? 'Начало цикла (первое выходное воскресенье)'
                 : isCycle ? 'Начало цикла (первый рабочий день)'
                 : 'Применять график начиная с'}
             </div>

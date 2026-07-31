@@ -49,6 +49,7 @@ export default function App() {
   const [filters, setFilters] = useState({
     department: '',
     position:   'all',
+    tag:        'all',
     shift:      'all',
   });
 
@@ -141,11 +142,26 @@ export default function App() {
     if (user && filters.department) loadPositions(filters.department);
   }, [user, filters.department, loadPositions]);
 
-  // Filter rows: by position, then by shift
+  // Теги, доступные для выбора в фильтре — только те, что встречаются у
+  // сотрудников, уже отфильтрованных по отделу (employees всегда только
+  // текущего отдела) и по должности, если она указана.
+  const availableTags = useMemo(() => {
+    let base = employees;
+    if (filters.position !== 'all') {
+      base = base.filter(e => e.position === filters.position);
+    }
+    const set = new Set(base.map(e => (e.tag || '').trim()).filter(Boolean));
+    return [...set].sort((a, b) => a.localeCompare(b, 'ru'));
+  }, [employees, filters.position]);
+
+  // Filter rows: by position, then by tag, then by shift
   const visibleEmployees = useMemo(() => {
     let result = employees;
     if (filters.position !== 'all') {
       result = result.filter(e => e.position === filters.position);
+    }
+    if (filters.tag !== 'all') {
+      result = result.filter(e => (e.tag || '') === filters.tag);
     }
     if (filters.shift === 'day') {
       result = result.filter(e => {
@@ -165,7 +181,7 @@ export default function App() {
       });
     }
     return result;
-  }, [employees, filters.position, filters.shift, scheduleMap, nameSort]);
+  }, [employees, filters.position, filters.tag, filters.shift, scheduleMap, nameSort]);
 
   function handleToggleNameSort() {
     setNameSort(prev => {
@@ -306,6 +322,7 @@ export default function App() {
         period={period}
         positions={positions}
         departments={visibleDepartments}
+        tags={availableTags}
         isAdmin={user.is_admin}
         canEdit={canEdit}
         onFilterChange={patch => setFilters(prev => ({ ...prev, ...patch }))}
