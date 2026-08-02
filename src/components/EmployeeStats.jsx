@@ -1,4 +1,4 @@
-import { splitCode } from '../mockData';
+import { splitCode, firstSundayOnOrAfter, is13x1DayOff } from '../mockData';
 
 // Единый справочник кодов: описание + участие в фактических часах.
 // Нормочасы в этот справочник не входят — они считаются строго по паттерну
@@ -7,7 +7,7 @@ import { splitCode } from '../mockData';
 const CODE_INFO = [
   { code: '',   label: 'Обычная смена',       fact: true  },
   { code: 'В',  label: 'Выходной',             fact: false },
-  { code: 'О',  label: 'Отпуск',               fact: true  },
+  { code: 'От', label: 'Отпуск',               fact: true  },
   { code: 'Б',  label: 'Больничный',           fact: false },
   { code: 'ДО', label: 'Отпуск за свой счёт',  fact: false },
   { code: 'П',  label: 'Прогул',               fact: false },
@@ -21,7 +21,7 @@ const CODE_RULES = Object.fromEntries(CODE_INFO.map(c => [c.code, c]));
 
 // Коды, которые считаются как «плановый день» по паттерну графика (часы не из
 // ячейки, а из графика на этот конкретный день) — статус на весь день, а не на слот.
-const PAID_ABSENCE_CODES = new Set(['О', 'Б']);
+const PAID_ABSENCE_CODES = new Set(['От', 'Б']);
 // Коды, которые считаются по слотам (день/ночь) с часами, введёнными в ячейке.
 const PER_SLOT_CODES = new Set(['К', 'Д', 'С']);
 
@@ -30,6 +30,7 @@ function buildPatternMap(pattern, startDateStr, year, month) {
   const startDate = new Date(startDateStr);
   startDate.setHours(0, 0, 0, 0);
   const daysInMonth = new Date(year, month, 0).getDate();
+  const sundayAnchor = pattern === '13x1' ? firstSundayOnOrAfter(startDate) : null;
   const map = {};
   for (let d = 1; d <= daysInMonth; d++) {
     const cur = new Date(year, month - 1, d);
@@ -45,7 +46,7 @@ function buildPatternMap(pattern, startDateStr, year, month) {
     } else if (pattern === '2x2') {
       if (diff >= 0 && diff % 4 < 2) h = 11;
     } else if (pattern === '13x1') {
-      if (diff >= 0 && diff % 14 !== 0) h = 11;
+      if (diff >= 0 && !is13x1DayOff(cur, sundayAnchor)) h = 11;
     }
     map[d] = h;
   }

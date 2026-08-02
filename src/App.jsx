@@ -208,7 +208,7 @@ export default function App() {
     const lastDay = endDay && endDay > day ? endDay : day;
     // Отпуск проставляется сразу на день и на ночь, независимо от того,
     // в какой колонке открыли редактор.
-    const isVacation = splitCode(value).code === 'О';
+    const isVacation = splitCode(value).code === 'От';
     const patch = isVacation
       ? { day_status: value, day_comment: comment, night_status: value, night_comment: comment }
       : shiftType === 'day'
@@ -364,7 +364,7 @@ export default function App() {
 
       <div className="legend">
         <div className="legend-item"><div className="legend-dot" style={{ background: '#fff3cd' }} />В — Выходной</div>
-        <div className="legend-item"><div className="legend-dot" style={{ background: '#cce5ff' }} />О — Отпуск</div>
+        <div className="legend-item"><div className="legend-dot" style={{ background: '#cce5ff' }} />От — Отпуск</div>
         <div className="legend-item"><div className="legend-dot" style={{ background: '#f8d7da' }} />Б — Больничный</div>
         <div className="legend-item"><div className="legend-dot" style={{ background: '#fde8c8' }} />ДО — Отпуск за свой счёт</div>
         <div className="legend-item"><div className="legend-dot" style={{ background: '#ff8787' }} />П — Прогул</div>

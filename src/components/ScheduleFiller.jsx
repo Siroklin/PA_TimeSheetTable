@@ -103,7 +103,7 @@ export default function ScheduleFiller({ employee, year, month, noNightShifts = 
           <div className="filler-start-row">
             <div className="filler-section-label">
               {isDNOV ? 'Начало цикла (первый рабочий день — Д)'
-                : is13x1 ? 'Начало цикла (первое выходное воскресенье)'
+                : is13x1 ? 'Начало цикла (выходной всегда воскресенье)'
                 : isCycle ? 'Начало цикла (первый рабочий день)'
                 : 'Применять график начиная с'}
             </div>

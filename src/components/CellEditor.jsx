@@ -7,7 +7,7 @@ const WORK = 'WORK'; // sentinel for "code is blank, cell is pure work hours"
 const SHIFT_OPTIONS = [
   { value: WORK, label: 'Работает' },
   { value: 'В',  label: 'В — Выходной' },
-  { value: 'О',  label: 'О — Отпуск' },
+  { value: 'От', label: 'От — Отпуск' },
   { value: 'Б',  label: 'Б — Больничный' },
   { value: 'ДО', label: 'ДО — Отпуск за свой счёт' },
   { value: 'П',  label: 'П — Прогул' },
@@ -71,7 +71,7 @@ export default function CellEditor({ cell, onSave, onClose }) {
 
   function handleSave() {
     const codeStr = code === WORK ? '' : code;
-    const h = (code === 'У' || code === 'В') ? 0 : Math.min(11, Number(hours) || 0);
+    const h = (code === 'У' || code === 'В' || code === 'От') ? 0 : Math.min(11, Number(hours) || 0);
     const value = h > 0 ? `${codeStr}${h}` : codeStr;
     onSave({
       empId: cell.empId, day: cell.day, endDay: Math.max(cell.day, endDay),
@@ -126,7 +126,7 @@ export default function CellEditor({ cell, onSave, onClose }) {
             ))}
           </div>
 
-          {code !== 'У' && code !== 'В' && (
+          {code !== 'У' && code !== 'В' && code !== 'От' && (
             <div className="comment-group">
               <label>Часы работы</label>
               <input

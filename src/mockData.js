@@ -4,7 +4,7 @@ export const positions = [
 
 export const SHIFT_COLORS = {
   'В':  '#fff3cd', // жёлтый — выходной
-  'О':  '#cce5ff', // синий — отпуск
+  'От': '#cce5ff', // синий — отпуск
   'Б':  '#f8d7da', // красный (розовый) — больничный
   'ДО': '#fde8c8', // оранжевый — отпуск за свой счёт
   'П':  '#ff8787', // красный — прогул
@@ -56,6 +56,21 @@ export function generateSchedule(employeeList, year, month) {
   return schedule;
 }
 
+export function firstSundayOnOrAfter(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  while (d.getDay() !== 0) d.setDate(d.getDate() + 1);
+  return d;
+}
+
+// 13x1: выходной — всегда воскресенье, через одно (каждое второе воскресенье
+// от якоря — первого воскресенья на/после начала цикла).
+export function is13x1DayOff(date, sundayAnchor) {
+  if (date.getDay() !== 0) return false;
+  const diffWeeks = Math.round((date - sundayAnchor) / (7 * 86400000));
+  return diffWeeks % 2 === 0;
+}
+
 /**
  * Returns per-day update objects { day?, nightShift? } only for days on/after
  * options.startDate. Days before startDate are omitted so the caller can
@@ -72,6 +87,11 @@ export function applyPattern(pattern, year, month, options = {}) {
     ? options.startDate
     : new Date(year, month - 1, 1);
   const result = {};
+
+  // 13x1: выходной должен всегда приходиться на воскресенье, независимо от
+  // того, на какой день недели выпала выбранная стартовая дата — поэтому
+  // якорем цикла берём ближайшее воскресенье на/после startDate.
+  const sundayAnchor = pattern === '13x1' ? firstSundayOnOrAfter(startDate) : null;
 
   for (let d = 1; d <= daysInMonth; d++) {
     const date = new Date(year, month - 1, d);
@@ -99,7 +119,7 @@ export function applyPattern(pattern, year, month, options = {}) {
       } else if (pattern === '2x2') {
         val = (diffDays % 4) < 2 ? '11' : 'В';
       } else if (pattern === '13x1') {
-        val = (diffDays % 14) === 0 ? 'В' : '11';
+        val = is13x1DayOff(date, sundayAnchor) ? 'В' : '11';
       }
       // Clear the unused column too, so switching shift mid-month doesn't
       // leave a stale value from the previous shift assignment.

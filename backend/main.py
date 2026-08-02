@@ -830,7 +830,7 @@ def save_schedule_pattern(
 # подставляются обычные рабочие часы по графику. Выходной (В), доп. смена (Д),
 # сверхурочные (С) и увольнение (У) — это часть графика/работы, а не отсутствие,
 # поэтому переносятся как есть (увольнение отдельно отфильтровывает сотрудника целиком).
-_ABSENCE_CODES = {'О', 'Б', 'ДО', 'П', 'К', 'Ф'}
+_ABSENCE_CODES = {'От', 'Б', 'ДО', 'П', 'К', 'Ф'}
 
 _STATUS_CODE_RE = re.compile(r'^(\D*)(\d+)?$')
 
@@ -881,6 +881,14 @@ def _apply_pattern_py(pattern: str, year: int, month: int, shift: str | None, st
     days_in_month = calendar.monthrange(year, month)[1]
     result = {}
 
+    # 13x1: выходной — всегда воскресенье, независимо от дня недели start_date.
+    # Якорь цикла — ближайшее воскресенье на/после start_date.
+    sunday_anchor = None
+    if pattern == '13x1':
+        sunday_anchor = start_date
+        while sunday_anchor.weekday() != 6:  # Python: Monday=0 … Sunday=6
+            sunday_anchor += timedelta(days=1)
+
     for d in range(1, days_in_month + 1):
         current = date(year, month, d)
         # Python weekday(): 0=Mon…6=Sun  →  JS getDay() equiv: Mon=1…Sun=0
@@ -917,8 +925,11 @@ def _apply_pattern_py(pattern: str, year: int, month: int, shift: str | None, st
             elif pattern == '13x1':
                 if diff < 0:
                     val = ''
+                elif dow_js == 0:
+                    diff_weeks = (current - sunday_anchor).days // 7
+                    val = 'В' if diff_weeks % 2 == 0 else '11'
                 else:
-                    val = 'В' if (diff % 14) == 0 else '11'
+                    val = '11'
             else:
                 val = ''
 

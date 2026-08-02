@@ -7,7 +7,7 @@ from openpyxl.utils import get_column_letter
 WORK_COLOR = 'D4EDDA'
 SHIFT_COLORS = {
     'В':  'FFF3CD',
-    'О':  'CCE5FF',
+    'От': 'CCE5FF',
     'Б':  'F8D7DA',
     'ДО': 'FDE8C8',
     'П':  'FF8787',
@@ -23,7 +23,7 @@ NIGHT_EMPTY = 'C8C8C8'
 LEGEND = [
     ('8',   WORK_COLOR, 'Работает (часы по графику)'),
     ('В',   'FFF3CD', 'Выходной'),
-    ('О',   'CCE5FF', 'Отпуск'),
+    ('От',  'CCE5FF', 'Отпуск'),
     ('Б',   'F8D7DA', 'Больничный'),
     ('ДО',  'FDE8C8', 'Отпуск за свой счёт'),
     ('П',   'FF8787', 'Прогул'),
