@@ -209,11 +209,14 @@ export default function App() {
     // Отпуск проставляется сразу на день и на ночь, независимо от того,
     // в какой колонке открыли редактор.
     const isVacation = splitCode(value).code === 'От';
-    const patch = isVacation
-      ? { day_status: value, day_comment: comment, night_status: value, night_comment: comment }
-      : shiftType === 'day'
-        ? { day_status: value, day_comment: comment }
-        : { night_status: value, night_comment: comment };
+    // Если ставим реальную рабочую смену, а на противоположной половине
+    // суток стоит "В" (весь день был выходным), снимаем эту отметку —
+    // сотрудник в этот день уже не выходной.
+    const isWork = isWorkValue(value);
+    const oppositeField = shiftType === 'day' ? 'nightShift' : 'day';
+    const oppositeCommentField = shiftType === 'day' ? 'nightComment' : 'dayComment';
+    const oppositeStatusKey = shiftType === 'day' ? 'night_status' : 'day_status';
+    const oppositeCommentKey = shiftType === 'day' ? 'night_comment' : 'day_comment';
 
     setScheduleMap(prev => {
       const empSched = { ...(prev[empId] ?? {}) };
@@ -224,13 +227,33 @@ export default function App() {
           empDay.nightShift = value; empDay.nightComment = comment;
         } else if (shiftType === 'day') { empDay.day = value; empDay.dayComment = comment; }
         else { empDay.nightShift = value; empDay.nightComment = comment; }
+
+        if (isWork && !isVacation && splitCode(empDay[oppositeField]).code === 'В') {
+          empDay[oppositeField] = '';
+          empDay[oppositeCommentField] = '';
+        }
         empSched[d] = empDay;
       }
       return { ...prev, [empId]: empSched };
     });
 
     const calls = [];
-    for (let d = day; d <= lastDay; d++) calls.push(updateCell(empId, year, month, d, patch));
+    for (let d = day; d <= lastDay; d++) {
+      const patch = isVacation
+        ? { day_status: value, day_comment: comment, night_status: value, night_comment: comment }
+        : shiftType === 'day'
+          ? { day_status: value, day_comment: comment }
+          : { night_status: value, night_comment: comment };
+
+      if (isWork && !isVacation) {
+        const oppVal = scheduleMap[empId]?.[d]?.[oppositeField];
+        if (splitCode(oppVal).code === 'В') {
+          patch[oppositeStatusKey] = '';
+          patch[oppositeCommentKey] = '';
+        }
+      }
+      calls.push(updateCell(empId, year, month, d, patch));
+    }
     try {
       await Promise.all(calls);
     } catch (err) {
