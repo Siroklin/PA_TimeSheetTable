@@ -90,7 +90,7 @@ _migrate_add_employee_email_column()
 _migrate_add_employee_tag_column()
 
 IDEA_SMTP_HOST = "mail.proaqua.ru"
-IDEA_SMTP_PORT = 225
+IDEA_SMTP_PORT = 25
 IDEA_FROM_ADDR = "schedule-app@proaqua.ru"
 IDEA_FROM_NAME = "Приложение График работы"
 IDEA_TO_ADDR = "siroklin@proaqua.ru"
