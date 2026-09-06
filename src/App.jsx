@@ -12,6 +12,7 @@ import CopySchedule from './components/CopySchedule';
 import ClearSchedule from './components/ClearSchedule';
 import EmployeeStats from './components/EmployeeStats';
 import IdeaSuggestion from './components/IdeaSuggestion';
+import HelpDoc from './components/HelpDoc';
 import Login from './components/Login';
 import {
   fetchEmployees, fetchSchedule, updateCell, getExportUrl,
@@ -76,6 +77,7 @@ export default function App() {
   const [showClearSchedule, setShowClearSchedule] = useState(false);
   const [showStats, setShowStats]                 = useState(false);
   const [showIdea, setShowIdea]                   = useState(false);
+  const [showHelp, setShowHelp]                   = useState(false);
   const [nameSort, setNameSort] = useState(() => localStorage.getItem('scheduleNameSort') || null);
 
   const { year, month } = period;
@@ -336,6 +338,9 @@ export default function App() {
         </div>
         <div className="header-right">
           <span className="header-user">{user.name}</span>
+          <button className="btn-help" onClick={() => setShowHelp(true)} title="Документация">
+            ?
+          </button>
           <button className="btn-idea" onClick={() => setShowIdea(true)}>
             Предложить идею для улучшения
           </button>
@@ -497,6 +502,9 @@ export default function App() {
       )}
       {showIdea && (
         <IdeaSuggestion onClose={() => setShowIdea(false)} />
+      )}
+      {showHelp && (
+        <HelpDoc onClose={() => setShowHelp(false)} />
       )}
     </div>
   );

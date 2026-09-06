@@ -1090,10 +1090,17 @@ def submit_idea(
         raise HTTPException(status_code=400, detail="Текст не может быть пустым")
 
     msg = EmailMessage()
-    msg["Subject"] = "Предложение по улучшению — График работы"
+    msg["Subject"] = f"Предложение по улучшению — График работы (от {current_user.name})"
     msg["From"] = f"{IDEA_FROM_NAME} <{IDEA_FROM_ADDR}>"
     msg["To"] = IDEA_TO_ADDR
-    msg.set_content(f"От: {current_user.name} ({current_user.login})\n\n{text}")
+    if current_user.email:
+        msg["Reply-To"] = current_user.email
+    msg.set_content(
+        f"Отправитель: {current_user.name}\n"
+        f"Логин: {current_user.login}\n"
+        f"Email: {current_user.email or '—'}\n\n"
+        f"{text}"
+    )
 
     try:
         with smtplib.SMTP(IDEA_SMTP_HOST, IDEA_SMTP_PORT, timeout=10) as smtp:
