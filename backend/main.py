@@ -2,8 +2,10 @@ import calendar
 import io
 import os
 import re
+import smtplib
 from collections import Counter
 from datetime import date, timedelta
+from email.message import EmailMessage
 from urllib.parse import quote
 
 from fastapi import FastAPI, Depends, HTTPException, Query
@@ -86,6 +88,12 @@ _migrate_add_user_role_column()
 _migrate_add_department_columns()
 _migrate_add_employee_email_column()
 _migrate_add_employee_tag_column()
+
+IDEA_SMTP_HOST = "mail.proaqua.ru"
+IDEA_SMTP_PORT = 225
+IDEA_FROM_ADDR = "schedule-app@proaqua.ru"
+IDEA_FROM_NAME = "Приложение График работы"
+IDEA_TO_ADDR = "siroklin@proaqua.ru"
 
 LEGACY_DEPARTMENTS = ["Цех №1", "Цех №2", "Цех №3", "Склад", "ПроИнокс"]
 
@@ -1068,6 +1076,32 @@ def copy_schedule(
 
     db.commit()
     return {"copied": copied}
+
+
+# ── Idea feedback ─────────────────────────────────────────────────────────────
+
+@app.post("/api/idea")
+def submit_idea(
+    body: schemas.IdeaSubmit,
+    current_user: models.User = Depends(get_current_user),
+):
+    text = body.text.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Текст не может быть пустым")
+
+    msg = EmailMessage()
+    msg["Subject"] = "Предложение по улучшению — График работы"
+    msg["From"] = f"{IDEA_FROM_NAME} <{IDEA_FROM_ADDR}>"
+    msg["To"] = IDEA_TO_ADDR
+    msg.set_content(f"От: {current_user.name} ({current_user.login})\n\n{text}")
+
+    try:
+        with smtplib.SMTP(IDEA_SMTP_HOST, IDEA_SMTP_PORT, timeout=10) as smtp:
+            smtp.send_message(msg)
+    except OSError as e:
+        raise HTTPException(status_code=502, detail=f"Не удалось отправить письмо: {e}")
+
+    return {"ok": True}
 
 
 # ── Export ────────────────────────────────────────────────────────────────────

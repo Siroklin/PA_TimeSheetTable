@@ -156,3 +156,7 @@ class SchedulePatternSave(BaseModel):
     pattern: str        # '2x2' | 'ДНОВ' | '5-0' | '6-1' | '13x1'
     shift: Optional[str] = None   # 'day' | 'night' | None for ДНОВ
     start_date: str     # 'YYYY-MM-DD'
+
+
+class IdeaSubmit(BaseModel):
+    text: str

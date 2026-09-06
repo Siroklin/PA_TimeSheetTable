@@ -11,6 +11,7 @@ import UsersAdmin from './components/UsersAdmin';
 import CopySchedule from './components/CopySchedule';
 import ClearSchedule from './components/ClearSchedule';
 import EmployeeStats from './components/EmployeeStats';
+import IdeaSuggestion from './components/IdeaSuggestion';
 import Login from './components/Login';
 import {
   fetchEmployees, fetchSchedule, updateCell, getExportUrl,
@@ -74,6 +75,7 @@ export default function App() {
   const [showCopySchedule, setShowCopySchedule]   = useState(false);
   const [showClearSchedule, setShowClearSchedule] = useState(false);
   const [showStats, setShowStats]                 = useState(false);
+  const [showIdea, setShowIdea]                   = useState(false);
   const [nameSort, setNameSort] = useState(() => localStorage.getItem('scheduleNameSort') || null);
 
   const { year, month } = period;
@@ -334,6 +336,9 @@ export default function App() {
         </div>
         <div className="header-right">
           <span className="header-user">{user.name}</span>
+          <button className="btn-idea" onClick={() => setShowIdea(true)}>
+            Предложить идею для улучшения
+          </button>
           <a className="btn-export" href={exportUrl} download>
             Скачать Excel
           </a>
@@ -489,6 +494,9 @@ export default function App() {
           month={month}
           onClose={() => setShowStats(false)}
         />
+      )}
+      {showIdea && (
+        <IdeaSuggestion onClose={() => setShowIdea(false)} />
       )}
     </div>
   );

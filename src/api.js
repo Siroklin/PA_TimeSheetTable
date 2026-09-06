@@ -218,3 +218,13 @@ export function copySchedule(department, fromYear, fromMonth, toYear, toMonth) {
     { method: 'POST' }
   );
 }
+
+// ── Idea feedback ────────────────────────────────────────────────────────────
+
+export function submitIdea(text) {
+  return apiFetch('/api/idea', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  });
+}

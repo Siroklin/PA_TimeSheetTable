@@ -1323,6 +1323,31 @@ tbody .col-name {
 /* ── Copy schedule modal ────────────────────────────── */
 .modal-copy { max-width: 440px; }
 
+/* ── Idea suggestion modal ──────────────────────────── */
+.modal-idea { width: 480px; max-width: 95vw; }
+.idea-sent {
+  padding: 12px 4px;
+  color: #2e7d32;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.btn-idea {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.btn-idea:hover { background: rgba(255,255,255,0.22); }
+
 .copy-info {
   font-size: 0.88rem;
   color: #555;
