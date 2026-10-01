@@ -356,6 +356,8 @@ export default function App() {
         positions={positions}
         departments={visibleDepartments}
         tags={availableTags}
+        visibleCount={visibleEmployees.length}
+        totalCount={employees.length}
         isAdmin={user.is_admin}
         canEdit={canEdit}
         onFilterChange={patch => setFilters(prev => ({ ...prev, ...patch }))}
