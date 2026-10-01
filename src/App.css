@@ -261,6 +261,25 @@ body {
   background: #fff;
 }
 
+/* Employee total */
+.employee-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+  min-width: 48px;
+  padding: 7px 12px;
+  border: 1px solid #c8d0da;
+  border-radius: 6px;
+  background: #eef3f8;
+  color: #1a3c5e;
+  font-size: 0.9rem;
+}
+
+.employee-total-of {
+  color: #666;
+}
+
 /* Service menu */
 .service-menu-wrap {
   position: relative;

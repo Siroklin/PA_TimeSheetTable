@@ -11,7 +11,7 @@ function getYears() {
 }
 
 export default function Filters({
-  filters, period, positions, departments, tags, isAdmin, canEdit,
+  filters, period, positions, departments, tags, visibleCount, totalCount, isAdmin, canEdit,
   onFilterChange, onPeriodChange,
   onAddEmployee, onUploadClick, onManagePositions, onManageDepartments, onManageUsers,
   onCopySchedule, onClearSchedule, onShowStats, onLogout,
@@ -99,6 +99,18 @@ export default function Filters({
           <option value="day">День</option>
           <option value="night">Ночь</option>
         </select>
+      </div>
+
+      <div className="filters-divider" />
+
+      <div className="filter-group">
+        <label>Итого сотрудников</label>
+        <div className="employee-total" title="Количество сотрудников по выбранным фильтрам">
+          <strong>{visibleCount ?? 0}</strong>
+          {totalCount != null && totalCount !== visibleCount && (
+            <span className="employee-total-of">из {totalCount}</span>
+          )}
+        </div>
       </div>
 
       <div className="filter-group service-menu-wrap" ref={menuRef} style={{ marginLeft: 'auto' }}>
