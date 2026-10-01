@@ -337,6 +337,12 @@ export default function App() {
           <h1>График работы сотрудников <small style={{fontSize:'0.5em',opacity:0.5}}>v2</small></h1>
         </div>
         <div className="header-right">
+          <span className="employee-total" title="Количество сотрудников по выбранным фильтрам">
+            Итого сотрудников: <strong>{visibleEmployees.length}</strong>
+            {visibleEmployees.length !== employees.length && (
+              <span className="employee-total-of">из {employees.length}</span>
+            )}
+          </span>
           <span className="header-user">{user.name}</span>
           <button className="btn-help" onClick={() => setShowHelp(true)} title="Документация">
             ?
@@ -356,8 +362,6 @@ export default function App() {
         positions={positions}
         departments={visibleDepartments}
         tags={availableTags}
-        visibleCount={visibleEmployees.length}
-        totalCount={employees.length}
         isAdmin={user.is_admin}
         canEdit={canEdit}
         onFilterChange={patch => setFilters(prev => ({ ...prev, ...patch }))}
